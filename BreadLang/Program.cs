@@ -40,13 +40,14 @@ programNode.Populate(parser);
 Compiler compiler = new();
 
 programNode.Compile(compiler);
-void PrintParser(Node node, int tabs)
-{
-    for (int i = 0; i < tabs; i++)
-        Console.Write("  ");
-    Console.WriteLine(node);
-    foreach (var child in node.Children)
-    {
-        PrintParser(child, tabs + 1);
-    }
-}
+
+//void PrintParser(Node node, int tabs)
+//{
+//    for (int i = 0; i < tabs; i++)
+//        Console.Write("  ");
+//    Console.WriteLine(node);
+//    foreach (var child in node.Children)
+//    {
+//        PrintParser(child, tabs + 1);
+//    }
+//}
