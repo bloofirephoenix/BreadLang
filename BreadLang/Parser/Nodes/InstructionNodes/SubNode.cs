@@ -24,14 +24,14 @@ public class SubNode : Node
 
         if (registerOrNumber is NumberNode numNode)
         {
-            compiler.WriteFirstByte(OpCodes.Add, true, register1);
+            compiler.WriteFirstByte(OpCodes.Sub, true, register1);
             compiler.Write((byte)numNode.Value);
             return;
         }
 
         if (registerOrNumber is RegisterNode regNode)
         {
-            compiler.WriteTwoBytes(OpCodes.Add, true, register1, compiler.GetRegister(regNode.Register));
+            compiler.WriteTwoBytes(OpCodes.Sub, true, register1, compiler.GetRegister(regNode.Register));
             return;
         }
 

@@ -3,7 +3,12 @@
 public class Compiler
 {
     public Dictionary<string, byte[]> Placeholders = new();
-    private BinaryWriter _writer = new(new MemoryStream());
+    private BinaryWriter _writer;
+
+    public Compiler(MemoryStream stream)
+    {
+        _writer = new(stream);
+    }
 
     public RegisterSelect GetRegister(string name)
     {
@@ -45,7 +50,7 @@ public class Compiler
 
     public byte[] GetImmediate16(int i)
     {
-        return new byte[] { (byte) i, (byte)(i >> 8) };
+        return new byte[] { (byte)(i >> 8), (byte) i };
     }
 
     public void WriteImmediate16(int i)

@@ -6,26 +6,27 @@ using BreadLang.Tokens;
 
 Console.WriteLine("BreadLang");
 
-// read file
-var program = @"
-fib:
-    MW L, A     ; L = A + B
-    ADD L, B
-    
-    MW B, A     ; B = A
-    MW A, L     ; L = A
-    
-    JO main     ; reset
-    
-    OUT A
-    JMP fib     ; keep going
+if (args.Length != 2)
+{
+    Console.WriteLine("Usage: BreadLang [path of program] [output path]");
+    return;
+}
 
-main:
-    MW L, 0
-    MW A, 0
-    MW B, 1
-    JMP fib
-";
+var programPath = args[0];
+var outputPath = args[1];
+
+if (!File.Exists(programPath))
+{
+    Console.WriteLine($"Could not find {programPath}");
+    return;
+}
+
+var program = File.ReadAllText(programPath);
+
+if (File.Exists(outputPath))
+{
+    File.Delete(outputPath);
+}
 
 new ErrorHandler(program);
 
@@ -37,9 +38,18 @@ var parser = new Parser(tokens);
 var programNode = new ProgramNode();
 programNode.Populate(parser);
 
-Compiler compiler = new();
+MemoryStream stream = new MemoryStream();
+Compiler compiler = new(stream);
 
 programNode.Compile(compiler);
+
+byte[] bytes = stream.ToArray();
+File.WriteAllBytes(outputPath, bytes);
+
+foreach (var b in bytes)
+{
+    Console.Write($"{Convert.ToString(b, 2).PadLeft(8, '0')} ");
+}
 
 //void PrintParser(Node node, int tabs)
 //{

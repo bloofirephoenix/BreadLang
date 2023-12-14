@@ -59,9 +59,9 @@ public class ProgramNode : Node
         int currentLocation = 0;
         foreach (var sub in subroutines)
         {
+            compiler.Placeholders.Add(sub.Name, compiler.GetImmediate16(currentLocation));
             int size = sub.GetSize();
             currentLocation += size;
-            compiler.Placeholders.Add(sub.Name, compiler.GetImmediate16(currentLocation));
         }
 
         // time to compile
