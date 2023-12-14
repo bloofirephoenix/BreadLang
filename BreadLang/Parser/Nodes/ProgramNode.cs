@@ -60,7 +60,6 @@ public class ProgramNode : Node
         foreach (var sub in subroutines)
         {
             int size = sub.GetSize();
-            Console.WriteLine($"{sub.Name} is {size} long and starts at {currentLocation}");
             currentLocation += size;
             compiler.Placeholders.Add(sub.Name, compiler.GetImmediate16(currentLocation));
         }

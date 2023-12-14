@@ -25,7 +25,19 @@ public class SwNode : Node
 
     public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+        RegisterSelect reg = compiler.GetRegister(((RegisterNode)Children[0]).Register);
+
+        if (Children.Count > 1)
+        {
+            compiler.WriteFirstByte(OpCodes.Lw, true, reg);
+
+            NumberNode address = (NumberNode)Children[1];
+            compiler.WriteImmediate16(address.Value);
+        }
+        else
+        {
+            compiler.WriteFirstByte(OpCodes.Lw, false, reg);
+        }
     }
 
     public override string ToString()

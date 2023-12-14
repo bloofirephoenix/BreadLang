@@ -24,7 +24,22 @@ public class PushNode : Node
 
     public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+        var node = Children[0];
+
+        if (node is RegisterNode reg)
+        {
+            compiler.WriteFirstByte(OpCodes.Push, false, compiler.GetRegister(reg.Register));
+            return;
+        }
+
+        if (node is NumberNode num)
+        {
+            compiler.WriteFirstByte(OpCodes.Push, true, null);
+            compiler.Write((byte)num.Value);
+            return;
+        }
+
+        throw new Exception("Expected register or number node");
     }
 
     public override string ToString()

@@ -23,7 +23,6 @@ public class AddNode : Node
 
     public override void Compile(Compiler compiler)
     {
-        // register 1
         RegisterSelect register1 = compiler.GetRegister(((RegisterNode)Children[0]).Register);
         Node registerOrNumber = Children[1];
 

@@ -21,7 +21,23 @@ public class MwNode : Node
 
     public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+        RegisterSelect reg1 = compiler.GetRegister(((RegisterNode)Children[0]).Register);
+        Node second = Children[1];
+
+        if (second is NumberNode num)
+        {
+            compiler.WriteFirstByte(OpCodes.Mw, true, reg1);
+            compiler.Write((byte) num.Value);
+            return;
+        }
+
+        if (second is RegisterNode reg2)
+        {
+            compiler.WriteTwoBytes(OpCodes.Mw, false, reg1, compiler.GetRegister(reg2.Register));
+            return;
+        }
+
+        throw new Exception("Expected number or register");
     }
 
     public override string ToString()

@@ -13,7 +13,8 @@ public class PopNode : Node
 
     public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+        var reg = (RegisterNode) Children[0];
+        compiler.WriteFirstByte(OpCodes.Pop, false, compiler.GetRegister(reg.Register));
     }
 
     public override string ToString()
