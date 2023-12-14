@@ -1,21 +1,27 @@
-﻿namespace BreadLang.Parser.Nodes.InstructionNodes;
+﻿using BreadLang.Compiling;
+
+namespace BreadLang.Parser.Nodes.InstructionNodes;
 
 public class LdaNode : Node
 {
     public override void Populate(Parser parser)
     {
-        var number = new NumberNode(NumberNode.Type.Immediate16);
-        number.Populate(parser);
-        Children.Add(number);
+        PopulateAndAdd(new NumberNode(NumberNode.Type.Immediate16), parser);
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+        compiler.WriteFirstByte(OpCodes.Lda, true, null);
+        compiler.WriteImmediate16(((NumberNode)Children[0]).Value);
     }
 
     public override string ToString()
     {
         return "LDA";
+    }
+
+    public override int GetSize()
+    {
+        return 3;
     }
 }

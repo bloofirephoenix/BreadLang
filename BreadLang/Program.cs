@@ -1,9 +1,10 @@
 ﻿using BreadLang;
+using BreadLang.Compiling;
 using BreadLang.Parser;
 using BreadLang.Parser.Nodes;
 using BreadLang.Tokens;
 
-Console.WriteLine("BreadLang ProgramNode");
+Console.WriteLine("BreadLang");
 
 // read file
 var program = @"
@@ -30,22 +31,15 @@ new ErrorHandler(program);
 
 var tokenizer = new Tokenizer(program);
 var tokens = tokenizer.ScanTokens();
-Console.WriteLine("Tokens:");
-
-foreach (var token in tokens)
-{
-    Console.WriteLine(token);
-}
-
-Console.WriteLine();
 
 var parser = new Parser(tokens);
 
 var programNode = new ProgramNode();
 programNode.Populate(parser);
 
-Console.WriteLine("Parser:");
-PrintParser(programNode, 0);
+Compiler compiler = new();
+
+programNode.Compile(compiler);
 void PrintParser(Node node, int tabs)
 {
     for (int i = 0; i < tabs; i++)

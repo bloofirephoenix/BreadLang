@@ -1,4 +1,5 @@
-﻿using BreadLang.Tokens;
+﻿using BreadLang.Compiling;
+using BreadLang.Tokens;
 
 namespace BreadLang.Parser.Nodes;
 
@@ -12,7 +13,7 @@ public class RegisterNode : Node
         Register = token.Lexeme;
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
         throw new NotImplementedException();
     }
@@ -20,5 +21,10 @@ public class RegisterNode : Node
     public override string ToString()
     {
         return $"Register({Register})";
+    }
+
+    public override int GetSize()
+    {
+        throw new NotImplementedException(); // it is invalid to ask for the size of a register node.
     }
 }

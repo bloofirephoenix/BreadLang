@@ -4,7 +4,7 @@ namespace BreadLang.Parser;
 
 public class Parser(List<Token> tokens)
 {
-    private int _current = 0;
+    private int _current;
 
     public Token Peek()
     {
@@ -12,6 +12,14 @@ public class Parser(List<Token> tokens)
             return tokens.Last();
 
         return tokens[_current];
+    }
+
+    public Token PeekNext()
+    {
+        if (_current + 1 >= tokens.Count)
+            return tokens.Last();
+
+        return tokens[_current + 1];
     }
 
     public void SkipNewLines()
@@ -33,6 +41,16 @@ public class Parser(List<Token> tokens)
     public bool Check(TokenType type)
     {
         return Peek().Type == type;
+    }
+
+    public bool ExpectPeek(TokenType type)
+    {
+        if (Peek().Type != type)
+        {
+            ErrorHandler.Instance!.Error(Peek(), $"Expected {type} found {Peek().Type}");
+        }
+
+        return true;
     }
 
     public Token Advance()

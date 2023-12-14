@@ -1,4 +1,5 @@
-﻿using BreadLang.Tokens;
+﻿using BreadLang.Compiling;
+using BreadLang.Tokens;
 
 namespace BreadLang.Parser.Nodes.InstructionNodes;
 
@@ -6,19 +7,32 @@ public class JoNode : Node
 {
     public override void Populate(Parser parser)
     {
-        if (parser.Check(TokenType.Number))
+        if (parser.Check(TokenType.Identifier))
         {
-            PopulateAndAdd(new NumberNode(NumberNode.Type.Immediate16), parser);
+            PopulateAndAdd(new PlaceholderNode(), parser);
         }
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+        if (Children.Count == 0)
+        {
+            compiler.WriteFirstByte(OpCodes.Jo, false, null);
+        }
+        else
+        {
+            compiler.WriteFirstByte(OpCodes.Jo, true, null);
+            Children[0].Compile(compiler);
+        }
     }
 
     public override string ToString()
     {
         return "JO";
+    }
+
+    public override int GetSize()
+    {
+        return Children.Count > 0 ? 3 : 1;
     }
 }

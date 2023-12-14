@@ -1,4 +1,6 @@
-﻿namespace BreadLang.Parser.Nodes.InstructionNodes;
+﻿using BreadLang.Compiling;
+
+namespace BreadLang.Parser.Nodes.InstructionNodes;
 
 public class NopNode : Node
 {
@@ -7,9 +9,14 @@ public class NopNode : Node
         // do nothing
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
-        return new byte[0b0000];
+
+    }
+
+    public override int GetSize()
+    {
+        return 1;
     }
 
     public override string ToString()

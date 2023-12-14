@@ -1,4 +1,6 @@
-﻿namespace BreadLang.Parser.Nodes.InstructionNodes;
+﻿using BreadLang.Compiling;
+
+namespace BreadLang.Parser.Nodes.InstructionNodes;
 
 public class HltNode : Node
 {
@@ -7,13 +9,18 @@ public class HltNode : Node
         // do nothing
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+        compiler.WriteFirstByte(OpCodes.Hlt, false, null);
     }
 
     public override string ToString()
     {
         throw new NotImplementedException();
+    }
+
+    public override int GetSize()
+    {
+        return 1;
     }
 }

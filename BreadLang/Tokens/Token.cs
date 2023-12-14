@@ -27,6 +27,6 @@ public record Token(TokenType Type, string Lexeme, object? Literal, int Line)
 {
     public override string ToString()
     {
-        return $"Token(type={Type}, lexeme={Lexeme.Replace("\n", @"\n")}, literal={Literal}, line={Line})";
+        return $"Token(type={Type}, lexeme={Lexeme.Replace("\n", @"\n").Replace("\r", @"\r")}, literal={Literal}, line={Line})";
     }
 }

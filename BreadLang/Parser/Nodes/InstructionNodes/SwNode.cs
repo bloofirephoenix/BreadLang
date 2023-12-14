@@ -1,4 +1,5 @@
-﻿using BreadLang.Tokens;
+﻿using BreadLang.Compiling;
+using BreadLang.Tokens;
 
 namespace BreadLang.Parser.Nodes.InstructionNodes;
 
@@ -22,7 +23,7 @@ public class SwNode : Node
         parser.Advance();
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
         throw new NotImplementedException();
     }
@@ -30,5 +31,10 @@ public class SwNode : Node
     public override string ToString()
     {
         return "SW";
+    }
+
+    public override int GetSize()
+    {
+        return 1 + (Children.Count > 0 ? 2 : 0);
     }
 }

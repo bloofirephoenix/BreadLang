@@ -1,4 +1,5 @@
-﻿using BreadLang.Tokens;
+﻿using BreadLang.Compiling;
+using BreadLang.Tokens;
 
 namespace BreadLang.Parser.Nodes;
 
@@ -51,7 +52,7 @@ public class NumberNode(NumberNode.Type type) : Node
         ErrorHandler.Instance!.Error(token, "Number is too large");
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
         throw new NotImplementedException();
     }
@@ -59,5 +60,10 @@ public class NumberNode(NumberNode.Type type) : Node
     public override string ToString()
     {
         return $"Number({Value})";
+    }
+
+    public override int GetSize()
+    {
+        return type == Type.Immediate8 ? 1 : 2;
     }
 }

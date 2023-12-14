@@ -69,7 +69,7 @@ public class Tokenizer(string source)
                     break; // ignore whitespace in the middle of line
 
                 // add indent token if its the start of the line
-                while (char.IsWhiteSpace(Peek()))
+                while (char.IsWhiteSpace(Peek()) && Peek() != '\n' && Peek() != '\r')
                     Advance();
 
                 AddToken(TokenType.Indent);

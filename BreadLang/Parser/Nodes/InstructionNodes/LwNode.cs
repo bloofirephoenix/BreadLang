@@ -1,4 +1,5 @@
-﻿using BreadLang.Tokens;
+﻿using BreadLang.Compiling;
+using BreadLang.Tokens;
 
 namespace BreadLang.Parser.Nodes.InstructionNodes;
 
@@ -6,24 +7,26 @@ public class LwNode : Node
 {
     public override void Populate(Parser parser)
     {
-        var registerNode = new RegisterNode();
-        registerNode.Populate(parser);
-        Children.Add(registerNode);
+        PopulateAndAdd(new RegisterNode(), parser);
 
-        if (parser.Peek().Type == TokenType.Comma)
+        if (parser.Check(TokenType.Comma))
         {
             // there is an immediate value
             parser.Advance(); // comma
-            var numberNode = new NumberNode(NumberNode.Type.Immediate16);
-            numberNode.Populate(parser);
-            Children.Add(numberNode);
+
+            PopulateAndAdd(new NumberNode(NumberNode.Type.Immediate16), parser);
         }
 
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+
+    }
+
+    public override int GetSize()
+    {
+        return 1 + (Children.Count > 0 ? 2 : 0);
     }
 
     public override string ToString()

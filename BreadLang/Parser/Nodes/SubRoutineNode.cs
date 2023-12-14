@@ -1,10 +1,12 @@
-﻿using BreadLang.Parser.Nodes.InstructionNodes;
+﻿using BreadLang.Compiling;
+using BreadLang.Parser.Nodes.InstructionNodes;
 using BreadLang.Tokens;
 
 namespace BreadLang.Parser.Nodes;
 
 public class SubRoutineNode(ProgramNode programNode, string name) : Node
 {
+    public string Name { get; private set; } = name;
     public override void Populate(Parser parser)
     {
         parser.SkipNewLines();
@@ -21,11 +23,15 @@ public class SubRoutineNode(ProgramNode programNode, string name) : Node
         {
             var token = parser.Advance();
             Node? node = null;
-            Console.WriteLine(parser.Current());
             switch (token.Type)
             {
                 case TokenType.NewLine:
-                    if (!programNode.CheckIndent(parser.Peek())) // todo peek next to see if its a blank line. do not exit subroutine until a non blank line fails indent check
+                    while (parser.Peek().Type == TokenType.NewLine)
+                    {
+                        parser.Advance();
+                    }
+
+                    if (!programNode.CheckIndent(parser.Peek()))
                     {
                         Console.WriteLine("exiting subroutine");
                         return;
@@ -64,13 +70,28 @@ public class SubRoutineNode(ProgramNode programNode, string name) : Node
         }
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
-        throw new NotImplementedException();
+        foreach (var child in Children)
+        {
+            child.Compile(compiler);
+        }
     }
 
     public override string ToString()
     {
         return $"Subroutine({name})";
+    }
+
+    public override int GetSize()
+    {
+        int size = 0;
+
+        foreach (Node node in Children)
+        {
+            size += node.GetSize();
+        }
+
+        return size;
     }
 }

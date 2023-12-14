@@ -1,4 +1,5 @@
-﻿using BreadLang.Tokens;
+﻿using BreadLang.Compiling;
+using BreadLang.Tokens;
 
 namespace BreadLang.Parser.Nodes.InstructionNodes;
 
@@ -6,27 +7,19 @@ public class MwNode : Node
 {
     public override void Populate(Parser parser)
     {
-        var rNode = new RegisterNode();
-        rNode.Populate(parser);
-        Children.Add(rNode);
+        PopulateAndAdd(new RegisterNode(), parser);
 
         parser.Expect(TokenType.Comma);
 
-        if (parser.Peek().Type == TokenType.Register)
-        {
-            var r2Node = new RegisterNode();
-            r2Node.Populate(parser);
-            Children.Add(r2Node);
-        }
+        if (parser.Check(TokenType.Register))
+            PopulateAndAdd(new RegisterNode(), parser);
+        else if (parser.Check(TokenType.Number))
+            PopulateAndAdd(new NumberNode(NumberNode.Type.Immediate8), parser);
         else
-        {
-            var number = new NumberNode(NumberNode.Type.Immediate8);
-            number.Populate(parser);
-            Children.Add(number);
-        }
+            ErrorHandler.Instance!.Error(parser.Current(), "Expected register or number");
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
         throw new NotImplementedException();
     }
@@ -34,5 +27,10 @@ public class MwNode : Node
     public override string ToString()
     {
         return "Mw";
+    }
+
+    public override int GetSize()
+    {
+        return 2;
     }
 }

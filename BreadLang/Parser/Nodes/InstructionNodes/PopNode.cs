@@ -1,4 +1,6 @@
-﻿namespace BreadLang.Parser.Nodes.InstructionNodes;
+﻿using BreadLang.Compiling;
+
+namespace BreadLang.Parser.Nodes.InstructionNodes;
 
 public class PopNode : Node
 {
@@ -9,7 +11,7 @@ public class PopNode : Node
         Children.Add(reg);
     }
 
-    public override byte[] Compile()
+    public override void Compile(Compiler compiler)
     {
         throw new NotImplementedException();
     }
@@ -17,5 +19,10 @@ public class PopNode : Node
     public override string ToString()
     {
         return "POP";
+    }
+
+    public override int GetSize()
+    {
+        return 1;
     }
 }
