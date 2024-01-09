@@ -7,7 +7,7 @@ public class PlaceholderNode : Node
 {
     public string Name { get; private set; } = "";
 
-    private Token _token;
+    private Token? _token;
 
     public override void Populate(Parser parser)
     {
@@ -19,7 +19,7 @@ public class PlaceholderNode : Node
     {
         if (!compiler.Placeholders.ContainsKey(Name))
         {
-            ErrorHandler.Instance!.Error(_token, $"Could not find {Name}");
+            ErrorHandler.Instance!.Error(_token!, $"Could not find {Name}");
             return;
         }
         compiler.Write(compiler.Placeholders[Name]);

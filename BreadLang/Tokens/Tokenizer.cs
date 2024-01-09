@@ -57,6 +57,8 @@ public class Tokenizer(string source)
         {
             case ':': AddToken(TokenType.Colon); break;
             case ',': AddToken(TokenType.Comma); break;
+            case '(': AddToken(TokenType.OpenParenthesis); break;
+            case ')': AddToken(TokenType.CloseParenthesis); break;
 
             case ';': // comments
                 while (Peek() != '\n' && !IsAtEnd()) 
@@ -152,7 +154,7 @@ public class Tokenizer(string source)
 
     private bool IsAlpha(char c)
     {
-        return (c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or '_');
+        return c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or '_' or '@';
     }
 
     private bool IsAlphaNumeric(char c)

@@ -31,7 +31,7 @@ public class NumberNode(NumberNode.Type type) : Node
                 Value = int.Parse(numberString);
             }
         }
-        catch (FormatException e)
+        catch (FormatException)
         {
             ErrorHandler.Instance!.Error(token, "Invalid number");
             return;

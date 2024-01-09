@@ -7,7 +7,7 @@ public enum TokenType
     Number,
 
     // 1 char tokens
-    Comma, Colon,
+    Comma, Colon, OpenParenthesis, CloseParenthesis,
 
     Indent, NewLine,
 

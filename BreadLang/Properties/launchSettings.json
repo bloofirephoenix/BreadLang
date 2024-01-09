@@ -2,7 +2,7 @@
   "profiles": {
     "BreadLang": {
       "commandName": "Project",
-      "commandLineArgs": "\"C:\\Users\\dashi\\OneDrive\\Documents\\GitHub\\BreadLang\\BreadLang\\bin\\Debug\\net8.0\\source\\program.bread\" \"C:\\Users\\dashi\\OneDrive\\Documents\\GitHub\\BreadLang\\BreadLang\\bin\\Debug\\net8.0\\source\\output.crumbs\""
+      "commandLineArgs": "source/program.bread source/output.crumbs"
     }
   }
 }
