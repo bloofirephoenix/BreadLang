@@ -15,7 +15,7 @@ public enum OpCodes
     Add  = 0b1010,
     Sub  = 0b1011,
     //     0b1100
-    //     0b1101
+    Tel  = 0b1101,
     Out  = 0b1110,
     Hlt  = 0b1111,
 }

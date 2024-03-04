@@ -49,7 +49,7 @@ public class SubRoutineNode(ProgramNode programNode, string name) : Node
 				case TokenType.Sub: node = new SubNode(); break;
 				case TokenType.Out: node = new OutNode(); break;
 				case TokenType.Hlt: node = new HltNode(); break;
-
+				
 				case TokenType.Eof:
 					return;
 

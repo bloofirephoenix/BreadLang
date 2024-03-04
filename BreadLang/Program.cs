@@ -43,7 +43,7 @@ PrintParser(programNode, 0);
 MemoryStream stream = new MemoryStream();
 Compiler compiler = new(stream);
 
-/*programNode.Compile(compiler);
+programNode.Compile(compiler);
 
 byte[] bytes = stream.ToArray();
 File.WriteAllBytes(outputPath, bytes);
@@ -51,7 +51,7 @@ File.WriteAllBytes(outputPath, bytes);
 foreach (var b in bytes)
 {
 	Console.Write($"{Convert.ToString(b, 2).PadLeft(8, '0')} ");
-}*/
+}
 
 void PrintParser(Node node, int tabs)
 {

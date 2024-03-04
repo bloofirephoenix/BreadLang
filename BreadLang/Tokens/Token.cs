@@ -12,10 +12,10 @@ public enum TokenType
     Indent, NewLine,
 
     // keywords
-    Macro, Include,
+    Macro, Include, NextAddr,
 
     // Instructions
-    Nop, Lw, Sw, Mw, Push, Pop, Lda, Jmp, Jz, Jo, Add, Sub, Out, Hlt,
+    Nop, Lw, Sw, Mw, Push, Pop, Lda, Jmp, Jz, Jo, Add, Sub, Tel, Out, Hlt,
 
     // Registers
     Register,

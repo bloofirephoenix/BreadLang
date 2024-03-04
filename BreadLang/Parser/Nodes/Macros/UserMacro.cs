@@ -1,9 +1,9 @@
 ﻿using BreadLang.Parser.Nodes;
 using BreadLang.Tokens;
 
-namespace BreadLang;
+namespace BreadLang.Macros;
 
-public class Macro(ProgramNode programNode, List<string> arguments)
+public class UserMacro(ProgramNode programNode, List<string> arguments) : IMacro
 {
 	private List<Token> _tokens = new();
 	private List<string> _arguments = arguments;

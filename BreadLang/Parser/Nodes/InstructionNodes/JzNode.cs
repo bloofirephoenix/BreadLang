@@ -1,4 +1,5 @@
 ﻿using BreadLang.Compiling;
+using BreadLang.Parser.Nodes.Placeholders;
 using BreadLang.Tokens;
 
 namespace BreadLang.Parser.Nodes.InstructionNodes;
@@ -10,7 +11,7 @@ public class JzNode : Node
         PopulateAndAdd(new RegisterNode(), parser);
 
         if (parser.Check(TokenType.Identifier))
-            PopulateAndAdd(new PlaceholderNode(), parser);
+            PopulateAndAdd(new SubRoutineAddressPlaceholderNode(), parser);
     }
 
     public override void Compile(Compiler compiler)
