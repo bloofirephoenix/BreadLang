@@ -16,7 +16,7 @@ public class HltNode : Node
 
     public override string ToString()
     {
-        throw new NotImplementedException();
+        return "HLT";
     }
 
     public override int GetSize()
