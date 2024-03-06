@@ -86,7 +86,7 @@ impl Tokenizer {
     }
 
     pub fn char(&self) -> char {
-        self.chars[self.current]
+        self.chars[self.current - 1]
     }
 
     pub fn peek(&self) -> char {
@@ -169,7 +169,7 @@ fn scan_token(tokenizer: &mut Tokenizer) {
         }
 
         _ => {
-             if tokenizer.char().is_digit(10) {
+            if tokenizer.char().is_digit(10) {
                 number(tokenizer)
             } else if is_alphabetic(tokenizer.char()) {
                 identifier(tokenizer);

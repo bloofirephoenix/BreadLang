@@ -1,7 +1,10 @@
-use core::panic;
-use std::process::id;
+mod number_nodes;
 
-use crate::compiler::{lexer::Instruction, parser};
+use core::panic;
+
+use crate::compiler::lexer::Instruction;
+
+use self::number_nodes::{Imm16, Imm8};
 
 use super::lexer::{Register, Token, TokenType};
 
@@ -25,12 +28,12 @@ impl Parser {
 
     /// Returns the current token
     fn current(&self) -> &Token {
-        &self.tokens[self.current]
+        &self.tokens[self.current - 1]
     }
 
     /// Returns the next token
     fn peek(&self) -> &Token {
-        &self.tokens[self.current + 1]
+        &self.tokens[self.current]
     }
 
     /// Returns the current token and advances to the next token
@@ -50,8 +53,7 @@ impl Parser {
 
     /// Skips NewLine tokens
     fn skip_new_lines(&mut self) {
-        while matches!(self.current().token_type, TokenType::NewLine) {
-            println!("advance new line {:?}", self.current().token_type);
+        while matches!(self.peek().token_type, TokenType::NewLine) {
             self.advance();
         }
     }
@@ -79,8 +81,7 @@ impl Node for ProgramNode {
             match parser.peek().token_type {
                 TokenType::EndOfFile => break 'parser,
                 TokenType::Macro => macros.push(MacroNode::populate(parser)),
-                _ | TokenType::Identifier(_) => subroutines.push(SubroutineNode::populate(parser)),
-                //_ => panic!("Invalid token {:?}", parser.peek().token_type)
+                _ => subroutines.push(SubroutineNode::populate(parser)),
             }
         }
 
@@ -177,12 +178,12 @@ impl Node for MacroNode {
 #[derive(Debug)]
 enum InstructionNode {
     NOP,
-    LW(RegisterNode, Option<NumberNode>),
-    SW(RegOrImmNode, Option<NumberNode>),
+    LW(RegisterNode, Option<Imm16>),
+    SW(RegOrImmNode, Option<Imm16>),
     MW(RegisterNode, RegOrImmNode),
     PUSH(RegOrImmNode),
     POP(RegisterNode),
-    LDA(NumberNode),
+    LDA(Imm16),
     JMP(Option<PlaceholderNode>),
     JZ(RegisterNode, Option<PlaceholderNode>),
     JO(Option<PlaceholderNode>),
@@ -203,15 +204,20 @@ impl Node for InstructionNode {
             TokenType::Instruction(Instruction::NOP) => InstructionNode::NOP,
             TokenType::Instruction(Instruction::LW) => {
                 let register = RegisterNode::populate(parser);
-                let number: Option<NumberNode>;
+                let number: Option<Imm16>;
 
                 if matches!(parser.peek().token_type, TokenType::Number(_)) {
-                    number = Some(NumberNode::populate(parser))
+                    number = Some(Imm16::populate(parser))
                 } else {
                     number = None;
                 }
                 
                 InstructionNode::LW(register, number)
+            },
+            TokenType::Instruction(Instruction::SW) => {
+                let register = RegOrImmNode::populate(parser);
+
+                todo!()
             }
             TokenType::Instruction(Instruction::HLT) => InstructionNode::HLT,
             _ => panic!("Invalid token. Expected instruction node")
@@ -227,25 +233,25 @@ impl Node for InstructionNode {
 struct PlaceholderNode(String);
 
 #[derive(Debug)]
-enum NumberNode {
-    Imm8(u8),
-    Imm16(u16)
+enum RegOrImmNode {
+    Number(Imm8),
+    Register(RegisterNode)
 }
 
-impl Node for NumberNode {
+impl Node for RegOrImmNode {
     fn populate(parser: &mut Parser) -> Self where Self: Sized {
+        let token = parser.advance();
+        match token.token_type {
+            
+            _ => panic!("Expected Register or Immediate 8")
+        }
+        
         todo!()
     }
 
     fn get_size(&self) -> i32 {
         todo!()
     }
-}
-
-#[derive(Debug)]
-enum RegOrImmNode {
-    Number(NumberNode),
-    Register(RegisterNode)
 }
 
 #[derive(Debug)]
