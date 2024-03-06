@@ -1,5 +1,3 @@
-use std::any::Any;
-
 #[derive(PartialEq, Debug)]
 pub enum Instruction {
     NOP  = 0b0000,
@@ -95,16 +93,17 @@ impl Tokenizer {
         if self.is_at_end() {
             '\0'
         } else {
-            self.chars[self.current + 1]
+            self.chars[self.current]
         }
     }
 
-    pub fn advance(&mut self) {
+    pub fn advance(&mut self) -> char {
         self.current += 1;
+        self.chars[self.current - 1]
     }
 
     pub fn is_at_end(&self) -> bool {
-        self.current + 1 >= self.chars.len()
+        self.current >= self.chars.len()
     }
 
     pub fn add_token(&mut self, token: TokenType) {
@@ -113,7 +112,7 @@ impl Tokenizer {
 
     pub fn get_string(&self) -> String {
         let mut string = String::from("");
-        for i in self.start..=self.current {
+        for i in self.start..self.current {
             string += &self.chars[i].to_string();
         }
         
@@ -136,7 +135,7 @@ pub fn scan_tokens(text: String) -> Vec<Token> {
 }
 
 fn scan_token(tokenizer: &mut Tokenizer) {
-    match tokenizer.char() {
+    match tokenizer.advance() {
 
         // 1 line chars
         ',' => tokenizer.add_token(TokenType::Comma),
@@ -170,7 +169,7 @@ fn scan_token(tokenizer: &mut Tokenizer) {
         }
 
         _ => {
-            if tokenizer.char().is_digit(10) {
+             if tokenizer.char().is_digit(10) {
                 number(tokenizer)
             } else if is_alphabetic(tokenizer.char()) {
                 identifier(tokenizer);
@@ -179,8 +178,6 @@ fn scan_token(tokenizer: &mut Tokenizer) {
             }
         }
     }
-
-    tokenizer.advance();
 }
 
 fn number(tokenizer: &mut Tokenizer) {

@@ -1,8 +1,9 @@
 use core::panic;
+use std::process::id;
 
 use crate::compiler::{lexer::Instruction, parser};
 
-use super::lexer::{Token, TokenType};
+use super::lexer::{Register, Token, TokenType};
 
 pub fn parse(tokens: Vec<Token>) -> ProgramNode {
     let mut parser = Parser::new(tokens);
@@ -24,20 +25,22 @@ impl Parser {
 
     /// Returns the current token
     fn current(&self) -> &Token {
-        &self.tokens.get(self.current).expect("Out of bounds")
+        &self.tokens[self.current]
     }
 
     /// Returns the next token
     fn peek(&self) -> &Token {
-        &self.tokens.get(self.current + 1).expect("Out of bounds")
+        &self.tokens[self.current + 1]
     }
 
     /// Returns the current token and advances to the next token
     fn advance(&mut self) -> &Token {
-        let token = self.current();
+        if (self.is_at_end()) {
+            return self.tokens.last().expect("No tokens");
+        }
+        
         self.current += 1;
-
-        token
+        self.tokens.get(self.current - 1).expect("Out of bounds")
     }
 
     /// Returns true if at there are no more tokens
@@ -47,7 +50,8 @@ impl Parser {
 
     /// Skips NewLine tokens
     fn skip_new_lines(&mut self) {
-        while self.peek().token_type == TokenType::NewLine {
+        while matches!(self.current().token_type, TokenType::NewLine) {
+            println!("advance new line {:?}", self.current().token_type);
             self.advance();
         }
     }
@@ -69,22 +73,15 @@ impl Node for ProgramNode {
         let mut subroutines: Vec<SubroutineNode> = Vec::new();
         let mut macros: Vec<MacroNode> = Vec::new();
 
-        while !parser.is_at_end() {
+        'parser: while !parser.is_at_end() {
             parser.skip_new_lines();
 
-            //if parser.check(TokenType::EndOfFile.type_id()) {
-            //    println!("end file");
-            //    break;
-            //} else if parser.check(TokenType::Macro.type_id()) {
-            //    println!("macro");
-            //    // macro
-            //    macros.push(MacroNode::populate(parser));
-            //    continue;
-            //} else {
-            //    println!("subroutine");
-            //    // subroutine
-            //    subroutines.push(SubroutineNode::populate(parser));
-            //}
+            match parser.peek().token_type {
+                TokenType::EndOfFile => break 'parser,
+                TokenType::Macro => macros.push(MacroNode::populate(parser)),
+                _ | TokenType::Identifier(_) => subroutines.push(SubroutineNode::populate(parser)),
+                //_ => panic!("Invalid token {:?}", parser.peek().token_type)
+            }
         }
 
         ProgramNode {
@@ -116,43 +113,35 @@ struct SubroutineNode {
 
 impl Node for SubroutineNode {
     fn populate(parser: &mut Parser) -> Self {
-        // get identifier
-        if matches!(parser)
-        
-        //let identifier = &parser.expect(TokenType::Identifier(_)).token_type;
+        parser.skip_new_lines();
 
-        
+        // identifier
+        let identifier = parser.advance();
         let name: String;
-        if let TokenType::Identifier(n) = identifier {
+        if let TokenType::Identifier(n) = &identifier.token_type {
             name = n.clone();
         } else {
-            panic!("Non Identifier token passed parser.expect");
+            panic!("Expected identifier. Found {:?}", identifier.token_type)
+        }
+        
+        // expect colon
+        if !matches!(parser.advance().token_type, TokenType::Colon) {
+            panic!("Expected colon {:?}", parser.current().token_type)
         }
 
-        //parser.expect(TokenType::Colon);
+        // expect new line
+        if !matches!(parser.advance().token_type, TokenType::NewLine) {
+            panic!("Expected new line")
+        }
 
-        let mut instructions = Vec::<InstructionNode>::new();
+        let mut instructions: Vec<InstructionNode> = Vec::new();
 
-        parser.skip_new_lines();
-        //parser.expect(TokenType::Indent);
-        
         while !parser.is_at_end() {
-            parser.advance();
-            let token = parser.current();
-            match &token.token_type {
-                TokenType::NewLine => {
-                    parser.skip_new_lines();
-                    //parser.expect(TokenType::Indent.type_id());
-                }
-                
-                TokenType::Instruction(_) | TokenType::Identifier(_) => {
-                    instructions.push(InstructionNode::populate(parser));
-                }
-
-                TokenType::EndOfFile => break,
-
-                _ => panic!("Unexpected token {:?}", token.token_type)
+            parser.skip_new_lines();
+            if !matches!(parser.advance().token_type, TokenType::Indent(_)) {
+                break;
             }
+            instructions.push(InstructionNode::populate(parser));
         }
 
         SubroutineNode {
@@ -208,30 +197,25 @@ enum InstructionNode {
 
 impl Node for InstructionNode {
     fn populate(parser: &mut Parser) -> Self {
-        let token = parser.current();
-        if let TokenType::Instruction(instruction) = &token.token_type {
-            return match instruction {
-                Instruction::NOP => InstructionNode::NOP,
-                Instruction::LW => {
-                    let register = RegisterNode::populate(parser);
-                    //parser.expect(TokenType::Comma.type_id()); // advance past comma
-                    
-                    let immediate: Option<NumberNode>;
-                    //if parser.check(TokenType::Number.type_id()) {
-                    //    immediate = Some(NumberNode::populate(parser));
-                    //} else {
-                    //    immediate = None;
-                    //}
+        let token = parser.advance();
 
-                    InstructionNode::LW(register, immediate)
+        match token.token_type {
+            TokenType::Instruction(Instruction::NOP) => InstructionNode::NOP,
+            TokenType::Instruction(Instruction::LW) => {
+                let register = RegisterNode::populate(parser);
+                let number: Option<NumberNode>;
+
+                if matches!(parser.peek().token_type, TokenType::Number(_)) {
+                    number = Some(NumberNode::populate(parser))
+                } else {
+                    number = None;
                 }
-                Instruction::HLT => InstructionNode::HLT,
-
-                _ => todo!()
+                
+                InstructionNode::LW(register, number)
             }
+            TokenType::Instruction(Instruction::HLT) => InstructionNode::HLT,
+            _ => panic!("Invalid token. Expected instruction node")
         }
-        
-        todo!()
     }
 
     fn get_size(&self) -> i32 {
@@ -274,7 +258,13 @@ enum RegisterNode {
 
 impl Node for RegisterNode {
     fn populate(parser: &mut Parser) -> RegisterNode {
-        todo!()
+        match parser.advance().token_type {
+            TokenType::Register(Register::A) => RegisterNode::A,
+            TokenType::Register(Register::B) => RegisterNode::B,
+            TokenType::Register(Register::H) => RegisterNode::H,
+            TokenType::Register(Register::L) => RegisterNode::L,
+            _ => panic!("Invalid token. Expected register")
+        }
     }
 
     fn get_size(&self) -> i32 {
