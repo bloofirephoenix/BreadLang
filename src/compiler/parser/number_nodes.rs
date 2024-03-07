@@ -7,13 +7,22 @@ use super::{Node, Parser};
 #[derive(Debug)]
 pub struct Imm8(u8);
 
+impl Node for Imm8 {
+    fn populate(parser: &mut Parser) -> Self where Self: Sized {
+        Imm8(u8::try_from(get_number(parser)).unwrap())
+    }
+
+    fn get_size(&self) -> i32 {
+        todo!()
+    }
+}
+
 #[derive(Debug)]
 pub struct Imm16(u16);
 
 impl Node for Imm16 {
     fn populate(parser: &mut Parser) -> Self where Self: Sized {
-        let num = get_number(parser);
-        panic!("{}", num);
+        Imm16(u16::try_from(get_number(parser)).unwrap())
     }
 
     fn get_size(&self) -> i32 {
