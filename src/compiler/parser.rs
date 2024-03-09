@@ -1,7 +1,6 @@
 mod number_nodes;
 
-use core::{num, panic};
-use std::process::id;
+use core::panic;
 
 use crate::compiler::lexer::Instruction;
 
@@ -168,6 +167,21 @@ struct MacroNode(Vec<InstructionNode>);
 
 impl Node for MacroNode {
     fn populate(parser: &mut Parser) -> Self {
+        // expect macro
+        if !matches!(parser.advance().token_type, TokenType::Macro) {
+            panic!("Expected macro")
+        }
+        
+        // identifier
+        let name: String;
+        if let TokenType::Identifier(n) = &parser.advance().token_type {
+            name = n.clone();
+        } else {
+            panic!("Expected Identifier");
+        }
+        
+        // 
+
         todo!()
     }
 
