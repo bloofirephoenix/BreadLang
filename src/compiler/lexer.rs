@@ -1,24 +1,26 @@
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Instruction {
-    NOP  = 0b0000,
-    LW   = 0b0001,
-    SW   = 0b0010,
-    MW   = 0b0011,
-    PUSH = 0b0100,
-    POP  = 0b0101,
-    LDA  = 0b0110,
-    JMP  = 0b0111,
-    JZ   = 0b1000,
-    JO   = 0b1001,
-    ADD  = 0b1010,
-    SUB  = 0b1011,
-    //     0b1100
-    TEL  = 0b1101,
-    OUT  = 0b1110,
-    HLT  = 0b1111,
+    //   = 0b00000,
+    LW   = 0b00001,
+    SW   = 0b00010,
+    MW   = 0b00011,
+    PUSH = 0b00100,
+    POP  = 0b00101,
+    LDA  = 0b00110,
+    JMP  = 0b00111,
+    JZ   = 0b01000,
+    JO   = 0b01001,
+    ADD  = 0b01010,
+    SUB  = 0b01011,
+    //   =  0b01100
+    TEL  = 0b01101,
+    OUT  = 0b01110,
+    HLT  = 0b01111,
+
+    NOP  = 0b11111,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum TokenType {
     // literals
     Identifier(String),
@@ -43,7 +45,7 @@ pub enum TokenType {
     NewLine
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Register {
     A,
     B,
@@ -51,14 +53,14 @@ pub enum Register {
     L
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub line: i32,
 }
 
 impl Token {
-    fn new(token_type: TokenType, line: i32) -> Token {
+    pub fn new(token_type: TokenType, line: i32) -> Token {
         Token {
             token_type,
             line

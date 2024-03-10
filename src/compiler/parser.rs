@@ -1,10 +1,11 @@
 mod number_nodes;
+mod instruction_node;
+mod macros;
 
 use core::panic;
+use std::collections::HashMap;
 
-use crate::compiler::lexer::Instruction;
-
-use self::number_nodes::{Imm16, Imm8};
+use self::{instruction_node::InstructionNode, macros::Macro, number_nodes::{Imm16, Imm8}};
 
 use super::lexer::{Register, Token, TokenType};
 
@@ -15,7 +16,7 @@ pub fn parse(tokens: Vec<Token>) -> ProgramNode {
 
 pub struct Parser {
     tokens: Vec<Token>,
-    current: usize
+    current: usize,
 }
 
 impl Parser {
@@ -28,22 +29,36 @@ impl Parser {
 
     /// Returns the current token
     fn current(&self) -> &Token {
-        &self.tokens[self.current - 1]
+        if self.current == 0 {
+            &self.tokens.first().unwrap()
+        } else {
+            &self.tokens[self.current - 1]
+        }
     }
 
     /// Returns the next token
     fn peek(&self) -> &Token {
-        &self.tokens[self.current]
+        if self.is_at_end() {
+            &self.tokens.last().unwrap()
+        } else {
+            &self.tokens[self.current]
+        }
     }
 
     /// Returns the current token and advances to the next token
     fn advance(&mut self) -> &Token {
-        if (self.is_at_end()) {
-            return self.tokens.last().expect("No tokens");
+        if self.is_at_end() {
+            return self.tokens.last().unwrap();
         }
         
         self.current += 1;
         self.tokens.get(self.current - 1).expect("Out of bounds")
+    }
+
+    fn insert(&mut self, tokens: Vec<Token>) {
+        for i in 0..tokens.len() {
+            self.tokens.insert(self.current + i, tokens[i].clone());
+        }
     }
 
     /// Returns true if at there are no more tokens
@@ -67,21 +82,23 @@ trait Node {
 #[derive(Debug)]
 pub struct ProgramNode {
     subroutines: Vec<SubroutineNode>,
-    macros: Vec<MacroNode>
+    macros: Vec<Macro>
 }
 
 impl Node for ProgramNode {
     fn populate(parser: &mut Parser) -> ProgramNode {
         let mut subroutines: Vec<SubroutineNode> = Vec::new();
-        let mut macros: Vec<MacroNode> = Vec::new();
+        let mut macros: Vec<Macro> = Vec::new();
 
         'parser: while !parser.is_at_end() {
             parser.skip_new_lines();
+            println!("{:?}", parser.peek());
 
             match parser.peek().token_type {
                 TokenType::EndOfFile => break 'parser,
-                TokenType::Macro => macros.push(MacroNode::populate(parser)),
-                _ => subroutines.push(SubroutineNode::populate(parser)),
+                TokenType::Macro => macros.push(Macro::populate(parser)),
+                TokenType::Identifier(_) => subroutines.push(SubroutineNode::populate(parser)),
+                _ => panic!("Expected a macro, subroutine, or end of file")
             }
         }
 
@@ -95,10 +112,6 @@ impl Node for ProgramNode {
         let mut size = 0;
 
         for node in &self.subroutines {
-            size += node.get_size();
-        }
-
-        for node in &self.macros {
             size += node.get_size();
         }
 
@@ -139,9 +152,12 @@ impl Node for SubroutineNode {
 
         while !parser.is_at_end() {
             parser.skip_new_lines();
-            if !matches!(parser.advance().token_type, TokenType::Indent(_)) {
+            if !matches!(parser.peek().token_type, TokenType::Indent(_)) {
                 break;
             }
+            
+            parser.advance(); // advance past indent
+
             instructions.push(InstructionNode::populate(parser));
         }
 
@@ -159,130 +175,6 @@ impl Node for SubroutineNode {
         }
 
         size
-    }
-}
-
-#[derive(Debug)]
-struct MacroNode(Vec<InstructionNode>);
-
-impl Node for MacroNode {
-    fn populate(parser: &mut Parser) -> Self {
-        // expect macro
-        if !matches!(parser.advance().token_type, TokenType::Macro) {
-            panic!("Expected macro")
-        }
-        
-        // identifier
-        let name: String;
-        if let TokenType::Identifier(n) = &parser.advance().token_type {
-            name = n.clone();
-        } else {
-            panic!("Expected Identifier");
-        }
-        
-        // 
-
-        todo!()
-    }
-
-    fn get_size(&self) -> i32 {
-        todo!()
-    }
-}
-
-#[derive(Debug)]
-enum InstructionNode {
-    NOP,
-    LW(RegisterNode, Option<Imm16>),
-    SW(RegisterNode, Option<Imm16>),
-    MW(RegisterNode, RegOrImmNode),
-    PUSH(RegOrImmNode),
-    POP(RegisterNode),
-    LDA(Imm16),
-    JMP(Option<PlaceholderNode>),
-    JZ(RegisterNode, Option<PlaceholderNode>),
-    JO(Option<PlaceholderNode>),
-    ADD(RegisterNode, RegOrImmNode),
-    SUB(RegisterNode, RegOrImmNode),
-    TEL(RegOrImmNode),
-    OUT(RegOrImmNode),
-    HLT,
-
-    //Macro(String, Vec<Box<dyn Node>>)
-}
-
-impl Node for InstructionNode {
-    fn populate(parser: &mut Parser) -> Self {
-        let token = parser.advance();
-
-        match token.token_type {
-            TokenType::Instruction(Instruction::NOP) => InstructionNode::NOP,
-            TokenType::Instruction(Instruction::LW) => {
-                let register = RegisterNode::populate(parser);
-                let number: Option<Imm16>;
-
-                if matches!(parser.peek().token_type, TokenType::Number(_)) {
-                    number = Some(Imm16::populate(parser))
-                } else {
-                    number = None;
-                }
-                
-                InstructionNode::LW(register, number)
-            },
-            TokenType::Instruction(Instruction::SW) => {
-                let register = RegisterNode::populate(parser);
-                let number: Option<Imm16>;
-
-                if matches!(parser.peek().token_type, TokenType::Number(_)) {
-                    number = Some(Imm16::populate(parser))
-                } else {
-                    number = None;
-                }
-                
-                InstructionNode::SW(register, number)
-            },
-            TokenType::Instruction(Instruction::MW) => {
-                let register = RegisterNode::populate(parser);
-                let reg_or_imm = RegOrImmNode::populate(parser);
-                
-                InstructionNode::MW(register, reg_or_imm)
-            },
-            TokenType::Instruction(Instruction::PUSH) => InstructionNode::PUSH(RegOrImmNode::populate(parser)),
-            TokenType::Instruction(Instruction::POP) => InstructionNode::POP(RegisterNode::populate(parser)),
-            TokenType::Instruction(Instruction::LDA) => InstructionNode::LDA(Imm16::populate(parser)),
-            TokenType::Instruction(Instruction::JMP) => {
-                if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
-                    InstructionNode::JMP(Some(PlaceholderNode::populate(parser)))
-                } else {
-                    InstructionNode::JMP(None)
-                }
-            },
-            TokenType::Instruction(Instruction::JZ) => {
-                let register = RegisterNode::populate(parser);
-                if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
-                    InstructionNode::JZ(register, Some(PlaceholderNode::populate(parser)))
-                } else {
-                    InstructionNode::JZ(register, None)
-                }
-            },
-            TokenType::Instruction(Instruction::JO) => {
-                if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
-                    InstructionNode::JO(Some(PlaceholderNode::populate(parser)))
-                } else {
-                    InstructionNode::JO(None)
-                }
-            },
-            TokenType::Instruction(Instruction::ADD) => 
-                InstructionNode::ADD(RegisterNode::populate(parser), RegOrImmNode::populate(parser)),
-            TokenType::Instruction(Instruction::SUB) =>
-                InstructionNode::SUB(RegisterNode::populate(parser), RegOrImmNode::populate(parser)),
-            TokenType::Instruction(Instruction::HLT) => InstructionNode::HLT,
-            _ => panic!("Invalid token. Expected instruction node"),
-        }
-    }
-
-    fn get_size(&self) -> i32 {
-        todo!()
     }
 }
 
