@@ -1,11 +1,10 @@
 mod number_nodes;
 mod instruction_node;
-mod macros;
+mod subroutine_node;
+pub mod program_node;
 
 use core::panic;
-use std::collections::HashMap;
-
-use self::{instruction_node::InstructionNode, macros::Macro, number_nodes::{Imm16, Imm8}};
+use self::{number_nodes::{Imm16, Imm8}, program_node::ProgramNode};
 
 use super::lexer::{Register, Token, TokenType};
 
@@ -16,7 +15,7 @@ pub fn parse(tokens: Vec<Token>) -> ProgramNode {
 
 pub struct Parser {
     tokens: Vec<Token>,
-    current: usize,
+    current: usize
 }
 
 impl Parser {
@@ -77,115 +76,24 @@ impl Parser {
 trait Node {
     fn populate(parser: &mut Parser) -> Self where Self: Sized;
     fn get_size(&self) -> i32;
+    //fn populate_placeholders(&mut self, placeholders: &mut HashMap<String, Placeholder>);
 }
+// misc nodes
 
 #[derive(Debug)]
-pub struct ProgramNode {
-    subroutines: Vec<SubroutineNode>,
-    macros: Vec<Macro>
-}
-
-impl Node for ProgramNode {
-    fn populate(parser: &mut Parser) -> ProgramNode {
-        let mut subroutines: Vec<SubroutineNode> = Vec::new();
-        let mut macros: Vec<Macro> = Vec::new();
-
-        'parser: while !parser.is_at_end() {
-            parser.skip_new_lines();
-            println!("{:?}", parser.peek());
-
-            match parser.peek().token_type {
-                TokenType::EndOfFile => break 'parser,
-                TokenType::Macro => macros.push(Macro::populate(parser)),
-                TokenType::Identifier(_) => subroutines.push(SubroutineNode::populate(parser)),
-                _ => panic!("Expected a macro, subroutine, or end of file")
-            }
-        }
-
-        ProgramNode {
-            subroutines,
-            macros
-        }
-    }
-
-    fn get_size(&self) -> i32 {
-        let mut size = 0;
-
-        for node in &self.subroutines {
-            size += node.get_size();
-        }
-
-        size
-    }
-}
-
-#[derive(Debug)]
-struct SubroutineNode {
+struct PlaceholderNode {
     name: String,
-    instructions: Vec<InstructionNode>
+    value: Option<Imm16>
 }
-
-impl Node for SubroutineNode {
-    fn populate(parser: &mut Parser) -> Self {
-        parser.skip_new_lines();
-
-        // identifier
-        let identifier = parser.advance();
-        let name: String;
-        if let TokenType::Identifier(n) = &identifier.token_type {
-            name = n.clone();
-        } else {
-            panic!("Expected identifier. Found {:?}", identifier.token_type)
-        }
-        
-        // expect colon
-        if !matches!(parser.advance().token_type, TokenType::Colon) {
-            panic!("Expected colon {:?}", parser.current().token_type)
-        }
-
-        // expect new line
-        if !matches!(parser.advance().token_type, TokenType::NewLine) {
-            panic!("Expected new line")
-        }
-
-        let mut instructions: Vec<InstructionNode> = Vec::new();
-
-        while !parser.is_at_end() {
-            parser.skip_new_lines();
-            if !matches!(parser.peek().token_type, TokenType::Indent(_)) {
-                break;
-            }
-            
-            parser.advance(); // advance past indent
-
-            instructions.push(InstructionNode::populate(parser));
-        }
-
-        SubroutineNode {
-            name,
-            instructions
-        }
-    }
-
-    fn get_size(&self) -> i32 {
-        let mut size = 0;
-        
-        for node in &self.instructions {
-            size += node.get_size();
-        }
-
-        size
-    }
-}
-
-#[derive(Debug)]
-struct PlaceholderNode(String);
 
 impl Node for PlaceholderNode {
     fn populate(parser: &mut Parser) -> PlaceholderNode {
         let identifier = parser.advance();
         if let TokenType::Identifier(str) = &identifier.token_type {
-            PlaceholderNode(String::from(str))
+            PlaceholderNode {
+                name: String::from(str),
+                value: None
+            }
         } else {
             panic!("Expected identifier");
         }
