@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::compiling::lexer::TokenType;
 
-use super::{instruction_node::InstructionNode, number_nodes::Imm16, Node, Parser};
+use super::{instruction_node::InstructionNode, macros::{Macro, MacroHolder, MacroNode}, number_nodes::Imm16, Node, Parser};
 
 #[derive(Debug)]
 pub struct SubroutineNode {
@@ -61,12 +61,40 @@ impl Node for SubroutineNode {
 
 impl SubroutineNode {
     pub fn calculate_placeholders(&mut self, position: &mut u16, placeholders: &HashMap<String, Imm16>) {
+        let initial_position = *position;
+
         self.placeholders = placeholders.clone();
         for instruction in &self.instructions {
             if let InstructionNode::DEF(name) = instruction {
                 self.placeholders.insert(name.clone(), Imm16::from(*position));
             } else {
                 *position += instruction.get_size() as u16;
+            }
+        }
+
+        // ok now macros
+        *position = initial_position;
+
+        for instruction in &mut self.instructions {
+            if let InstructionNode::Macro(holder) = instruction {
+                if let MacroHolder::Macro(node) = holder {
+                    node.calculate_placeholders(position, placeholders)
+                } else {
+                    panic!("All macros should be populated by now");
+                }
+            } else {
+                *position += instruction.get_size() as u16;
+            }
+        }
+    }
+
+    pub fn populate_macros(&mut self, macros: &HashMap<String, Macro>) {
+        for instruction in &mut self.instructions {
+            if let InstructionNode::Macro(holder) = instruction {
+                if let MacroHolder::Placeholder(name, args) = holder {
+                    let m = macros.get(name).unwrap(); // todo
+                    *instruction = InstructionNode::Macro(MacroHolder::Macro(MacroNode::populate(m, args)));
+                }
             }
         }
     }

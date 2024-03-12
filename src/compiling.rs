@@ -15,8 +15,13 @@ pub fn compile(file: String) {
     
     let tokens = scan_tokens(contents);
 
+    /*for token in &tokens {
+        println!("{:?}", token);
+    }*/
+
     let mut node = parse(tokens);
-    node.calculate_placeholders();
+
+    println!("{:#?}", node);
 
     let mut compiler = Compiler::new();
     node.compile(&mut compiler);

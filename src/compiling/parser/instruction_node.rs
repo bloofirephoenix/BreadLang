@@ -1,6 +1,6 @@
 use crate::compiling::lexer::{Instruction, Token, TokenType};
 
-use super::{number_nodes::Imm16, Node, Parser, PlaceholderNode, PlaceholderOrImmNode, RegOrImmNode, RegisterNode};
+use super::{macros::MacroHolder, number_nodes::Imm16, Node, Parser, PlaceholderNode, PlaceholderOrImmNode, RegOrImmNode, RegisterNode};
 
 #[derive(Debug)]
 pub enum InstructionNode {
@@ -20,7 +20,7 @@ pub enum InstructionNode {
     OUT(RegOrImmNode),
     HLT,
 
-    Macro(String, Vec<Token>),
+    Macro(MacroHolder),
 
     DEF(String)
 }
@@ -113,7 +113,7 @@ impl Node for InstructionNode {
                 while !matches!(parser.peek().token_type, TokenType::NewLine | TokenType::EndOfFile) {
                     arguments.push(parser.advance().clone());
                 }
-                InstructionNode::Macro(macro_name, arguments)
+                InstructionNode::Macro(MacroHolder::Placeholder(macro_name, arguments))
             }
 
             _ => panic!("Invalid token. Expected instruction node. Found {:?}", token),
@@ -148,7 +148,12 @@ impl Node for InstructionNode {
                 }
             },
             Self::DEF(_) => 0,
-            Self::Macro(_, _) => todo!("Macros are not currently supported")
+            Self::Macro(holder) => {
+                match holder {
+                    MacroHolder::Placeholder(_, _) => panic!("Cannot get the size of a macro placeholder"),
+                    MacroHolder::Macro(m) => m.get_size(),
+                }
+            }
         }
     }
     
@@ -235,7 +240,12 @@ impl Node for InstructionNode {
             
             InstructionNode::HLT => compiler.first_byte(Instruction::HLT, false, None),
 
-            InstructionNode::Macro(_, _) => todo!("Macros are currently not supported"),
+            InstructionNode::Macro(holder) => {
+                match holder {
+                    MacroHolder::Placeholder(_, _) => panic!("Cannot compile a macro placeholder"),
+                    MacroHolder::Macro(m) => m.compile(compiler),
+                }
+            },
 
             InstructionNode::DEF(_) => {} // do nothing.
         }
@@ -259,7 +269,7 @@ fn node_to_instr(node: &InstructionNode) -> Instruction {
         InstructionNode::TEL(_) => Instruction::TEL,
         InstructionNode::OUT(_) => Instruction::OUT,
         InstructionNode::HLT => Instruction::HLT,
-        InstructionNode::Macro(_, _) => panic!("Cannot convert a macro instruction node to an opcode"),
+        InstructionNode::Macro(_) => panic!("Cannot convert a macro instruction node to an opcode"),
         InstructionNode::DEF(_) => panic!("Cannot convert a def instruction node to an opcode"),
     }
 }
