@@ -1,12 +1,13 @@
-mod number_nodes;
+pub mod number_nodes;
 mod instruction_node;
 mod subroutine_node;
 pub mod program_node;
+mod macros;
 
 use core::panic;
 use self::{number_nodes::{Imm16, Imm8}, program_node::ProgramNode};
 
-use super::lexer::{Register, Token, TokenType};
+use super::{compiler::Compiler, lexer::{Register, Token, TokenType}};
 
 pub fn parse(tokens: Vec<Token>) -> ProgramNode {
     let mut parser = Parser::new(tokens);
@@ -73,17 +74,43 @@ impl Parser {
     }
 }
 
-trait Node {
+pub trait Node {
     fn populate(parser: &mut Parser) -> Self where Self: Sized;
     fn get_size(&self) -> i32;
-    //fn populate_placeholders(&mut self, placeholders: &mut HashMap<String, Placeholder>);
+    fn compile(&self, compiler: &mut Compiler);
 }
 // misc nodes
 
 #[derive(Debug)]
+enum PlaceholderOrImmNode {
+    PlaceholderNode(PlaceholderNode),
+    Imm16(Imm16)
+}
+
+impl Node for PlaceholderOrImmNode {
+    fn populate(parser: &mut Parser) -> Self where Self: Sized {
+        match parser.peek().token_type {
+            TokenType::Identifier(_) => PlaceholderOrImmNode::PlaceholderNode(PlaceholderNode::populate(parser)),
+            TokenType::Number(_) => PlaceholderOrImmNode::Imm16(Imm16::populate(parser)),
+            _ => panic!("Expected Identifier or Number")
+        }
+    }
+
+    fn get_size(&self) -> i32 {
+        return 2;
+    }
+
+    fn compile(&self, compiler: &mut Compiler) {
+        match self {
+            PlaceholderOrImmNode::PlaceholderNode(node) => node.compile(compiler),
+            PlaceholderOrImmNode::Imm16(node) => node.compile(compiler)
+        }
+    }
+}
+
+#[derive(Debug)]
 struct PlaceholderNode {
-    name: String,
-    value: Option<Imm16>
+    name: String
 }
 
 impl Node for PlaceholderNode {
@@ -91,8 +118,7 @@ impl Node for PlaceholderNode {
         let identifier = parser.advance();
         if let TokenType::Identifier(str) = &identifier.token_type {
             PlaceholderNode {
-                name: String::from(str),
-                value: None
+                name: String::from(str)
             }
         } else {
             panic!("Expected identifier");
@@ -100,7 +126,16 @@ impl Node for PlaceholderNode {
     }
 
     fn get_size(&self) -> i32 {
-        todo!()
+        2
+    }
+
+    fn compile(&self, compiler: &mut Compiler) {
+        if compiler.scope.contains_key(&self.name) {
+            let value = compiler.scope.get(&self.name).unwrap().clone();
+            value.compile(compiler);
+        } else {
+            panic!("Placeholder does not exist")
+        }
     }
 }
 
@@ -125,30 +160,30 @@ impl Node for RegOrImmNode {
     }
 
     fn get_size(&self) -> i32 {
-        todo!()
+        panic!("Requesting the size of a RegOrImmNode is not a valid operation")
+    }
+    
+    fn compile(&self, compiler: &mut Compiler) {
+        panic!("Compiling a RegOrImmNode is not a valid operation");
     }
 }
 
 #[derive(Debug)]
-enum RegisterNode {
-    A,
-    B,
-    H,
-    L
-}
+struct RegisterNode(Register);
 
 impl Node for RegisterNode {
     fn populate(parser: &mut Parser) -> RegisterNode {
-        match parser.advance().token_type {
-            TokenType::Register(Register::A) => RegisterNode::A,
-            TokenType::Register(Register::B) => RegisterNode::B,
-            TokenType::Register(Register::H) => RegisterNode::H,
-            TokenType::Register(Register::L) => RegisterNode::L,
+        match &parser.advance().token_type {
+            TokenType::Register(reg) => RegisterNode(reg.clone()),
             _ => panic!("Invalid token {:?}. Expected register", parser.advance().token_type)
         }
     }
 
     fn get_size(&self) -> i32 {
         panic!("Requesting the size of a register is not a valid operation")
+    }
+    
+    fn compile(&self, compiler: &mut Compiler) {
+        panic!("Compiling a RegisterNode is not a valid operation")
     }
 }

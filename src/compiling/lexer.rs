@@ -45,15 +45,15 @@ pub enum TokenType {
     NewLine
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Register {
-    A,
-    B,
-    H,
-    L
+    A = 0b00,
+    B = 0b01,
+    H = 0b10,
+    L = 0b11
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
     pub line: i32,
@@ -254,4 +254,29 @@ fn is_alphanumeric(char: char) -> bool {
 
 fn is_alphabetic(char: char) -> bool {
     (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_' || char == '@'
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    #[test]
+    fn scan_keywords() {
+        let text = "@macro @include DEF A B H L";
+
+        let result = scan_tokens(String::from(text));
+        let expected: Vec<Token> = vec![
+            Token::new(TokenType::Macro, 1),
+            Token::new(TokenType::Include, 1),
+            Token::new(TokenType::Def, 1),
+            Token::new(TokenType::Register(Register::A), 1),
+            Token::new(TokenType::Register(Register::B), 1),
+            Token::new(TokenType::Register(Register::H), 1),
+            Token::new(TokenType::Register(Register::L), 1),
+            Token::new(TokenType::EndOfFile, 1)
+        ];
+
+        assert_eq!(expected, result);
+    }
 }

@@ -1,6 +1,6 @@
 use core::panic;
 
-use crate::compiler::lexer::TokenType;
+use crate::compiling::lexer::TokenType;
 
 use super::{Node, Parser};
 
@@ -13,11 +13,15 @@ impl Node for Imm8 {
     }
 
     fn get_size(&self) -> i32 {
-        todo!()
+        1
+    }
+    
+    fn compile(&self, compiler: &mut crate::compiling::compiler::Compiler) {
+        compiler.add_byte(self.0);
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Imm16(u16);
 
 impl Node for Imm16 {
@@ -26,7 +30,17 @@ impl Node for Imm16 {
     }
 
     fn get_size(&self) -> i32 {
-        todo!()
+        2
+    }
+    
+    fn compile(&self, compiler: &mut crate::compiling::compiler::Compiler) {
+        compiler.add_bytes(&self.0.to_be_bytes())
+    }
+}
+
+impl Imm16 {
+    pub fn from(value: u16) -> Imm16 {
+        Imm16(value)
     }
 }
 
