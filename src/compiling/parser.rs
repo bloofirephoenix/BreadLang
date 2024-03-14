@@ -5,25 +5,28 @@ pub mod program_node;
 mod macros;
 
 use core::panic;
+use std::fs;
 use self::{number_nodes::{Imm16, Imm8}, program_node::ProgramNode};
 
-use super::{compiler::Compiler, lexer::{Register, Token, TokenType}};
+use super::{compiler::Compiler, lexer::{scan_tokens, Register, Token, TokenType}};
 
-pub fn parse(tokens: Vec<Token>) -> ProgramNode {
-    let mut parser = Parser::new(tokens);
+pub fn parse(tokens: Vec<Token>, file: String) -> ProgramNode {
+    let mut parser = Parser::new(tokens, file);
     ProgramNode::populate(&mut parser)
 }
 
 pub struct Parser {
     tokens: Vec<Token>,
-    current: usize
+    current: usize,
+    files: Vec<String>
 }
 
 impl Parser {
-    fn new(tokens: Vec<Token>) -> Parser {
+    fn new(tokens: Vec<Token>, file: String) -> Parser {
         Parser {
             tokens,
-            current: 0
+            current: 0,
+            files: vec![file]
         }
     }
 
@@ -70,6 +73,21 @@ impl Parser {
     fn skip_new_lines(&mut self) {
         while matches!(self.peek().token_type, TokenType::NewLine) {
             self.advance();
+        }
+    }
+
+    // files
+    fn add_file(&mut self, file: &String) {
+        if !self.files.contains(file) {
+            self.files.push(file.clone());
+
+            // read a file
+            let contents = fs::read_to_string(file)
+                .expect(&format!("Unable to read file {}", file));
+            
+            let mut tokens = scan_tokens(contents);
+            tokens.remove(tokens.len() - 1); // remove end of file token
+            self.insert(tokens);
         }
     }
 }

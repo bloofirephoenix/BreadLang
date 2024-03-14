@@ -253,7 +253,8 @@ fn is_alphanumeric(char: char) -> bool {
 }
 
 fn is_alphabetic(char: char) -> bool {
-    (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_' || char == '@'
+    (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || 
+        char == '_' || char == '@' || char == '.' || char == '\\' || char == '/'
 }
 
 #[cfg(test)]

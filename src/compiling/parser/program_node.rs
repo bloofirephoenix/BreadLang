@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs};
 
-use crate::compiling::lexer::TokenType;
+use crate::compiling::lexer::{scan_tokens, TokenType};
 
 use super::{macros::Macro, number_nodes::Imm16, subroutine_node::SubroutineNode, Node, Parser};
 
@@ -26,7 +26,23 @@ impl Node for ProgramNode {
                     macros.insert(m.name.clone(), m);
                 }
                 TokenType::Identifier(_) => subroutines.push(SubroutineNode::populate(parser)),
-                _ => panic!("Expected a macro, subroutine, or end of file. Found {:?}", parser.peek())
+                TokenType::Include => {
+                    parser.advance(); // advance past include
+
+                    let mut path: String = String::from("");
+
+                    while let TokenType::Identifier(p) = &parser.advance().token_type {
+                        path += p;
+                        path += " ";
+                    }
+
+                    if path.is_empty() {
+                        panic!("Expected a valid path");
+                    }
+
+                    parser.add_file(&String::from(path.trim()));
+                }
+                _ => panic!("Expected a macro, subroutine, include, or end of file. Found {:?}", parser.peek())
             }
         }
 

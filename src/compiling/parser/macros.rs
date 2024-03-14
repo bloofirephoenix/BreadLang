@@ -132,12 +132,6 @@ impl MacroNode {
 
         tokens.push(Token::new(TokenType::EndOfFile, -1));
 
-        
-        println!("Macro");
-        for token in &tokens {
-            println!("{:?}", token);
-        }
-
         let mut parser = Parser::new(tokens);
 
         MacroNode {
