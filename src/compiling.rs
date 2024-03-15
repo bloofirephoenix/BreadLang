@@ -2,7 +2,7 @@ use std::{env, fs::{self, DirBuilder, File}, io::Write, path::Path};
 
 use crate::compiling::compiler::Compiler;
 
-use self::{error_handler::{CompilerError, ErrorCode}, lexer::{scan_tokens, Token}, parser::{parse, program_node::ProgramNode}};
+use self::{lexer::{scan_tokens, Token}, parser::{parse, program_node::ProgramNode}};
 
 mod lexer;
 pub mod compiler;
