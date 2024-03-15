@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "BreadLang": {
-      "commandName": "Project",
-      "commandLineArgs": "source/program.bread source/output.crumbs"
-    }
-  }
-}
