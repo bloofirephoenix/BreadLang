@@ -50,7 +50,6 @@ pub fn compile() -> Result<Vec<u8>,()> {
     }
 
     env::set_current_dir("..").unwrap();
-    
 
     let mut compiler = Compiler::new();
     node.compile(&mut compiler);
