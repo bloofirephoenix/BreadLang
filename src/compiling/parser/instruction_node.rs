@@ -10,7 +10,7 @@ pub enum InstructionNode {
     MW(RegisterNode, RegOrImmNode),
     PUSH(RegOrImmNode),
     POP(RegisterNode),
-    LDA(PlaceholderNode),
+    LDA(PlaceholderOrImmNode),
     JMP(Option<PlaceholderNode>),
     JZ(RegisterNode, Option<PlaceholderNode>),
     JO(Option<PlaceholderNode>),
@@ -63,7 +63,7 @@ impl Node for InstructionNode {
             },
             TokenType::Instruction(Instruction::PUSH) => Ok(InstructionNode::PUSH(RegOrImmNode::populate(parser)?)),
             TokenType::Instruction(Instruction::POP) => Ok(InstructionNode::POP(RegisterNode::populate(parser)?)),
-            TokenType::Instruction(Instruction::LDA) => Ok(InstructionNode::LDA(PlaceholderNode::populate(parser)?)),
+            TokenType::Instruction(Instruction::LDA) => Ok(InstructionNode::LDA(PlaceholderOrImmNode::populate(parser)?)),
             TokenType::Instruction(Instruction::JMP) => {
                 if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
                     Ok(InstructionNode::JMP(Some(PlaceholderNode::populate(parser)?)))
