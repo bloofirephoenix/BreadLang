@@ -207,9 +207,15 @@ pub fn run(rom: Vec<u8>, debug: bool) {
                 if immediate {
                     right = state.get_byte();
                     state.increment();
+                    if debug {
+                        println!("{:?} = {:?}({}) - {:?}", reg_a, reg_a, left, right);
+                    }
                 } else {
                     let reg_b = get_second_register(&mut state);
                     right = state.registers[&reg_b];
+                    if debug {
+                        println!("{:?} = {:?}({}) - {:?}({})", reg_a, reg_a, left, reg_b, right);
+                    }
                 }
 
                 let result = add(left, !right, 1, &mut state);
@@ -221,17 +227,30 @@ pub fn run(rom: Vec<u8>, debug: bool) {
                 if immediate {
                     value = state.get_byte();
                     state.increment();
+                    if debug {
+                        println!("OUT {}", value);
+                    }
                 } else {
                     value = state.registers[&reg_a];
+                    if debug {
+                        println!("OUT {:?}({})", reg_a, value);
+                    }
                 }
-                if debug {
+                if !debug {
                     println!("OUT {}", value);
-                } else {
-                    
                 }
             },
-            Instruction::HLT => break 'main,
-            Instruction::NOP => {},
+            Instruction::HLT => {
+                if debug {
+                    println!("HLT");
+                }
+                break 'main
+            },
+            Instruction::NOP => {
+                if debug {
+                    println!("DEBUG");
+                }
+            },
         }
 
         if debug {

@@ -1,8 +1,9 @@
 #[macro_use] extern crate enum_primitive;
 
-use std::env;
+use std::{env, fs::{DirBuilder, File}, io::Write, path::Path};
 
 use colored::Colorize;
+use compiling::error_handler;
 
 use crate::{compiling::compile, run::run};
 
@@ -39,8 +40,37 @@ fn main() {
         "build" => {
             let _ = build();
         },
+        "new" => {
+            new();
+        }
         _ => usage(),
     }
+}
+
+fn new() {
+    let src = Path::new("src");
+    let main = Path::new("src/main.bread");
+    let gitignore = Path::new(".gitignore");
+
+    if src.exists() {
+        error_handler::print_error("src folder already exists");
+        return;
+    }
+    if gitignore.exists() {
+        error_handler::print_error(".gitignore already exists");
+        return;
+    }
+
+    // make src folder
+    DirBuilder::new().create(src).unwrap();
+    
+    // make gitignore
+    let mut ignore_out = File::create(gitignore).unwrap();
+    write!(ignore_out, "/bin \n *.crumbs").unwrap();
+
+    // make main.bread
+    let mut main_out = File::create(main).unwrap();
+    write!(main_out, "main:\n\tHLT").unwrap();
 }
 
 fn build() -> Result<Vec<u8>, ()> {
