@@ -11,9 +11,8 @@ pub mod compiling;
 pub mod run;
 
 fn main() {
-    env::set_current_dir("program").unwrap();
-
-    println!("{}", "BreadLang v2.0".yellow().bold());
+    let v = env!("CARGO_PKG_VERSION");
+    println!("{}", format!("BreadLang v{}", v).yellow().bold());
 
     let args: Vec<String> = env::args().collect();
 
@@ -71,6 +70,8 @@ fn new() {
     // make main.bread
     let mut main_out = File::create(main).unwrap();
     write!(main_out, "main:\n\tHLT").unwrap();
+
+    println!("{}", "Finished".green().bold());
 }
 
 fn build() -> Result<Vec<u8>, ()> {

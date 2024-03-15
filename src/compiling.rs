@@ -10,16 +10,17 @@ pub mod error_handler;
 mod parser;
 
 pub fn compile() -> Result<Vec<u8>,()> {
+    if !Path::new("src").exists() {
+        error_handler::print_error("src does not exist");
+        return Err(());
+    }
     env::set_current_dir("src").unwrap();
     
     let file = "main.bread";
     let path = Path::new(&file);
 
     if !path.exists() {
-        //throw_error(format!("File {} does not exist", file));
-        CompilerError::new(
-            ErrorCode::NoSuchFile(String::from("main.bread")), &String::from("n/a"), -1, true
-        ).print();
+        error_handler::print_error("main.bread does not exist");
         return Err(());
     }
 
