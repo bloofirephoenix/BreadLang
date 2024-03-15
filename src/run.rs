@@ -191,6 +191,7 @@ pub fn run(rom: Vec<u8>, debug: bool) {
                     }
                 } else {
                     let reg_b = get_second_register(&mut state);
+                    state.increment();
                     right = state.registers[&reg_b];
 
                     if debug {
@@ -212,6 +213,7 @@ pub fn run(rom: Vec<u8>, debug: bool) {
                     }
                 } else {
                     let reg_b = get_second_register(&mut state);
+                    state.increment();
                     right = state.registers[&reg_b];
                     if debug {
                         println!("{:?} = {:?}({}) - {:?}({})", reg_a, reg_a, left, reg_b, right);
@@ -264,9 +266,9 @@ fn get_word16(state: &mut State, immediate: bool) -> u16 {
     let low: u16;
     if immediate {
         high = state.get_byte() as u16;
-        state.program_counter += 1;
+        state.increment();
         low = state.get_byte() as u16;
-        state.program_counter += 1;
+        state.increment();
     } else {
         high = state.registers[&Register::H] as u16;
         low = state.registers[&Register::L] as u16;
