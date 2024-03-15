@@ -1,6 +1,6 @@
-use crate::compiling::lexer::{Instruction, Token, TokenType};
+use crate::compiling::{error_handler::{CompilerError, ErrorCode}, lexer::{Token, TokenType}, Instruction};
 
-use super::{macros::MacroHolder, number_nodes::Imm16, Node, Parser, PlaceholderNode, PlaceholderOrImmNode, RegOrImmNode, RegisterNode};
+use super::{macros::MacroHolder, number_nodes::Imm16, placeholder_node::{PlaceholderNode, PlaceholderOrImmNode}, reg_imm_node::RegOrImmNode, register_node::RegisterNode, Node, Parser};
 
 #[derive(Debug)]
 pub enum InstructionNode {
@@ -26,86 +26,96 @@ pub enum InstructionNode {
 }
 
 impl Node for InstructionNode {
-    fn populate(parser: &mut Parser) -> Self {
+    fn populate(parser: &mut Parser) -> Result<InstructionNode, CompilerError> {
         let token = parser.advance();
 
         match token.token_type {
-            TokenType::Instruction(Instruction::NOP) => InstructionNode::NOP,
+            TokenType::Instruction(Instruction::NOP) => Ok(InstructionNode::NOP),
             TokenType::Instruction(Instruction::LW) => {
                 let register = RegisterNode::populate(parser);
                 let number: Option<Imm16>;
 
                 if matches!(parser.peek().token_type, TokenType::Number(_)) {
-                    number = Some(Imm16::populate(parser))
+                    number = Some(Imm16::populate(parser)?)
                 } else {
                     number = None;
                 }
                 
-                InstructionNode::LW(register, number)
+                Ok(InstructionNode::LW(register?, number))
             },
             TokenType::Instruction(Instruction::SW) => {
                 let register = RegisterNode::populate(parser);
                 let number: Option<Imm16>;
 
                 if matches!(parser.peek().token_type, TokenType::Number(_)) {
-                    number = Some(Imm16::populate(parser))
+                    number = Some(Imm16::populate(parser)?)
                 } else {
                     number = None;
                 }
                 
-                InstructionNode::SW(register, number)
+                Ok(InstructionNode::SW(register?, number))
             },
             TokenType::Instruction(Instruction::MW) => {
-                let register = RegisterNode::populate(parser);
-                let reg_or_imm = RegOrImmNode::populate(parser);
+                let register = RegisterNode::populate(parser)?;
+                let reg_or_imm = RegOrImmNode::populate(parser)?;
                 
-                InstructionNode::MW(register, reg_or_imm)
+                Ok(InstructionNode::MW(register, reg_or_imm))
             },
-            TokenType::Instruction(Instruction::PUSH) => InstructionNode::PUSH(RegOrImmNode::populate(parser)),
-            TokenType::Instruction(Instruction::POP) => InstructionNode::POP(RegisterNode::populate(parser)),
-            TokenType::Instruction(Instruction::LDA) => InstructionNode::LDA(PlaceholderOrImmNode::populate(parser)),
+            TokenType::Instruction(Instruction::PUSH) => Ok(InstructionNode::PUSH(RegOrImmNode::populate(parser)?)),
+            TokenType::Instruction(Instruction::POP) => Ok(InstructionNode::POP(RegisterNode::populate(parser)?)),
+            TokenType::Instruction(Instruction::LDA) => Ok(InstructionNode::LDA(PlaceholderOrImmNode::populate(parser)?)),
             TokenType::Instruction(Instruction::JMP) => {
                 if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
-                    InstructionNode::JMP(Some(PlaceholderNode::populate(parser)))
+                    Ok(InstructionNode::JMP(Some(PlaceholderNode::populate(parser)?)))
                 } else {
-                    InstructionNode::JMP(None)
+                    Ok(InstructionNode::JMP(None))
                 }
             },
             TokenType::Instruction(Instruction::JZ) => {
-                let register = RegisterNode::populate(parser);
+                let register = RegisterNode::populate(parser)?;
                 if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
-                    InstructionNode::JZ(register, Some(PlaceholderNode::populate(parser)))
+                    Ok(InstructionNode::JZ(register, Some(PlaceholderNode::populate(parser)?)))
                 } else {
-                    InstructionNode::JZ(register, None)
+                    Ok(InstructionNode::JZ(register, None))
                 }
             },
             TokenType::Instruction(Instruction::JO) => {
                 if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
-                    InstructionNode::JO(Some(PlaceholderNode::populate(parser)))
+                    Ok(InstructionNode::JO(Some(PlaceholderNode::populate(parser)?)))
                 } else {
-                    InstructionNode::JO(None)
+                    Ok(InstructionNode::JO(None))
                 }
             },
-            TokenType::Instruction(Instruction::ADD) => InstructionNode::ADD(RegisterNode::populate(parser), RegOrImmNode::populate(parser)),
-            TokenType::Instruction(Instruction::SUB) => InstructionNode::SUB(RegisterNode::populate(parser), RegOrImmNode::populate(parser)),
-            TokenType::Instruction(Instruction::TEL) => InstructionNode::TEL(RegOrImmNode::populate(parser)),
-            TokenType::Instruction(Instruction::OUT) => InstructionNode::OUT(RegOrImmNode::populate(parser)),
-            TokenType::Instruction(Instruction::HLT) => InstructionNode::HLT,
+            TokenType::Instruction(Instruction::ADD) => 
+                Ok(InstructionNode::ADD(RegisterNode::populate(parser)?, RegOrImmNode::populate(parser)?)),
+            TokenType::Instruction(Instruction::SUB) => 
+                Ok(InstructionNode::SUB(RegisterNode::populate(parser)?, RegOrImmNode::populate(parser)?)),
+            TokenType::Instruction(Instruction::TEL) => 
+                Ok(InstructionNode::TEL(RegOrImmNode::populate(parser)?)),
+            TokenType::Instruction(Instruction::OUT) => 
+                Ok(InstructionNode::OUT(RegOrImmNode::populate(parser)?)),
+            TokenType::Instruction(Instruction::HLT) => 
+                Ok(InstructionNode::HLT),
 
             TokenType::Def => {
                 if let TokenType::Identifier(name) = &parser.advance().token_type {
-                    InstructionNode::DEF(name.clone())
+                    Ok(InstructionNode::DEF(name.clone()))
                 } else {
-                    panic!("Expected an identifier");
+                    Err(CompilerError::from_token(
+                        ErrorCode::ExpectedButFound("Identifier".to_string(), parser.current().token_type.clone()), parser.current(), false
+                    ))
                 }
             }
 
             TokenType::Identifier(_) => {
+                let token = token.clone();
                 let macro_name: String;
                 if let TokenType::Identifier(identifier) = &parser.current().token_type {
                     macro_name = identifier.clone();
                 } else {
-                    panic!("Expected identifier")
+                    return Err(CompilerError::from_token(
+                        ErrorCode::ExpectedButFound("Identifier".to_string(), parser.current().token_type.clone()), parser.current(), false
+                    ));
                 }
                 
                 // grab the arguments
@@ -113,10 +123,14 @@ impl Node for InstructionNode {
                 while !matches!(parser.peek().token_type, TokenType::NewLine | TokenType::EndOfFile) {
                     arguments.push(parser.advance().clone());
                 }
-                InstructionNode::Macro(MacroHolder::Placeholder(macro_name, arguments))
+                Ok(InstructionNode::Macro(MacroHolder::Placeholder(macro_name, arguments, token)))
             }
 
-            _ => panic!("Invalid token. Expected instruction node. Found {:?}", token),
+            _ => {
+                Err(CompilerError::from_token(
+                    ErrorCode::ExpectedButFound("Instruction".to_string(), parser.current().token_type.clone()), parser.current(), false
+                ))
+            }
         }
     }
 
@@ -150,7 +164,7 @@ impl Node for InstructionNode {
             Self::DEF(_) => 0,
             Self::Macro(holder) => {
                 match holder {
-                    MacroHolder::Placeholder(_, _) => panic!("Cannot get the size of a macro placeholder"),
+                    MacroHolder::Placeholder(_, _, _) => panic!("Cannot get the size of a macro placeholder"),
                     MacroHolder::Macro(m) => m.get_size(),
                 }
             }
@@ -242,7 +256,7 @@ impl Node for InstructionNode {
 
             InstructionNode::Macro(holder) => {
                 match holder {
-                    MacroHolder::Placeholder(_, _) => panic!("Cannot compile a macro placeholder"),
+                    MacroHolder::Placeholder(_, _, _) => panic!("Cannot compile a macro placeholder"),
                     MacroHolder::Macro(m) => m.compile(compiler),
                 }
             },

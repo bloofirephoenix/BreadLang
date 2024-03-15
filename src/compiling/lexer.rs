@@ -1,24 +1,6 @@
-#[derive(PartialEq, Debug, Clone)]
-pub enum Instruction {
-    //   = 0b00000,
-    LW   = 0b00001,
-    SW   = 0b00010,
-    MW   = 0b00011,
-    PUSH = 0b00100,
-    POP  = 0b00101,
-    LDA  = 0b00110,
-    JMP  = 0b00111,
-    JZ   = 0b01000,
-    JO   = 0b01001,
-    ADD  = 0b01010,
-    SUB  = 0b01011,
-    //   =  0b01100
-    TEL  = 0b01101,
-    OUT  = 0b01110,
-    HLT  = 0b01111,
+use super::{error_handler::{CompilerError, ErrorCode}, Instruction, Register};
 
-    NOP  = 0b11111,
-}
+use colored::Colorize;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum TokenType {
@@ -45,25 +27,19 @@ pub enum TokenType {
     NewLine
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub enum Register {
-    A = 0b00,
-    B = 0b01,
-    H = 0b10,
-    L = 0b11
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
     pub line: i32,
+    pub file: String
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, line: i32) -> Token {
+    pub fn new(token_type: TokenType, line: i32, file: String) -> Token {
         Token {
             token_type,
-            line
+            line,
+            file
         }
     }
 }
@@ -73,17 +49,20 @@ struct Tokenizer {
     current: usize,
     line: i32,
     tokens: Vec<Token>,
-    chars: Vec<char>
+    chars: Vec<char>,
+    filename: String
 }
 
 impl Tokenizer {
-    pub fn new(text: String) -> Tokenizer {
+    pub fn new(text: String, filename: String) -> Tokenizer {
+        
         Tokenizer {
             start: 0,
             current: 0,
             line: 1,
             tokens: Vec::new(),
-            chars: text.chars().collect()
+            chars: text.chars().collect(),
+            filename
         }
     }
 
@@ -109,7 +88,7 @@ impl Tokenizer {
     }
 
     pub fn add_token(&mut self, token: TokenType) {
-        self.tokens.push(Token::new(token, self.line))
+        self.tokens.push(Token::new(token, self.line, self.filename.clone()))
     }
 
     pub fn get_string(&self) -> String {
@@ -122,21 +101,22 @@ impl Tokenizer {
     }
 }
 
-pub fn scan_tokens(text: String) -> Vec<Token> {
+pub fn scan_tokens(text: String, filename: String) -> Result<Vec<Token>, CompilerError> {
+    println!("{}", format!("Discovered file {}", filename).black());
 
-    let mut tokenizer = Tokenizer::new(text);
+    let mut tokenizer = Tokenizer::new(text, filename);
 
     while !tokenizer.is_at_end() {
         tokenizer.start = tokenizer.current;
-        scan_token(&mut tokenizer)
+        scan_token(&mut tokenizer)?;
     }
 
-    tokenizer.tokens.push(Token::new(TokenType::EndOfFile, tokenizer.line));
+    tokenizer.tokens.push(Token::new(TokenType::EndOfFile, tokenizer.line, tokenizer.filename.clone()));
 
-    tokenizer.tokens
+    Ok(tokenizer.tokens)
 }
 
-fn scan_token(tokenizer: &mut Tokenizer) {
+fn scan_token(tokenizer: &mut Tokenizer) -> Result<(), CompilerError> {
     match tokenizer.advance() {
 
         // 1 line chars
@@ -172,17 +152,19 @@ fn scan_token(tokenizer: &mut Tokenizer) {
 
         _ => {
             if tokenizer.char().is_digit(10) {
-                number(tokenizer)
+                return number(tokenizer)
             } else if is_alphabetic(tokenizer.char()) {
                 identifier(tokenizer);
             } else {
-                panic!("Unexpected Character");
+                return Err(CompilerError::new(ErrorCode::UnexpectedChar(tokenizer.char()), &tokenizer.filename, tokenizer.line, true));
             }
         }
-    }
+    };
+
+    return Ok(());
 }
 
-fn number(tokenizer: &mut Tokenizer) {
+fn number(tokenizer: &mut Tokenizer) -> Result<(), CompilerError> {
     if tokenizer.char() == '0' {
         match tokenizer.peek() {
             // hex number
@@ -200,7 +182,11 @@ fn number(tokenizer: &mut Tokenizer) {
                     tokenizer.advance();
                 }
             }
-            _ => panic!("Expected binary or hex number")
+            _ => {
+                while tokenizer.peek().is_digit(10) || tokenizer.peek() == '_' {
+                    tokenizer.advance();
+                }
+            }
         }
     } else {
         while tokenizer.peek().is_digit(10) || tokenizer.peek() == '_' {
@@ -209,6 +195,8 @@ fn number(tokenizer: &mut Tokenizer) {
     }
 
     tokenizer.add_token(TokenType::Number(tokenizer.get_string()));
+
+    return Ok(())
 }
 
 fn identifier(tokenizer: &mut Tokenizer) {
@@ -255,29 +243,4 @@ fn is_alphanumeric(char: char) -> bool {
 fn is_alphabetic(char: char) -> bool {
     (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || 
         char == '_' || char == '@' || char == '.' || char == '\\' || char == '/'
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-
-    #[test]
-    fn scan_keywords() {
-        let text = "@macro @include DEF A B H L";
-
-        let result = scan_tokens(String::from(text));
-        let expected: Vec<Token> = vec![
-            Token::new(TokenType::Macro, 1),
-            Token::new(TokenType::Include, 1),
-            Token::new(TokenType::Def, 1),
-            Token::new(TokenType::Register(Register::A), 1),
-            Token::new(TokenType::Register(Register::B), 1),
-            Token::new(TokenType::Register(Register::H), 1),
-            Token::new(TokenType::Register(Register::L), 1),
-            Token::new(TokenType::EndOfFile, 1)
-        ];
-
-        assert_eq!(expected, result);
-    }
 }

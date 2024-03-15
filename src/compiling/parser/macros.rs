@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::compiling::{compiler::Compiler, lexer::{Token, TokenType}, parser::subroutine_node::get_instructions};
-
+use crate::compiling::{compiler::Compiler, error_handler::{CompilerError, ErrorCode}, lexer::{Token, TokenType}, parser::subroutine_node::get_instructions};
+use colored::Colorize;
 use super::{instruction_node::InstructionNode, number_nodes::Imm16, Node, Parser};
 
 #[derive(Debug)]
@@ -12,15 +12,15 @@ pub struct Macro {
 }
 
 impl Macro {
-    pub fn populate(parser: &mut Parser) -> Macro {
+    pub fn populate(parser: &mut Parser) -> Result<Macro, CompilerError> {
         // expect macro
         if !matches!(parser.advance().token_type, TokenType::Macro) {
-            panic!("Expected @macro");
+            return Err(CompilerError::expected("@macro", parser.current(), true));
         }
 
         // expect new line
         if !matches!(parser.advance().token_type, TokenType::NewLine) {
-            panic!("Expected a new line");
+            return Err(CompilerError::expected("New Line", parser.current(), true));
         }
 
         // expect a silly lil guy (identifier)
@@ -28,19 +28,20 @@ impl Macro {
         if let TokenType::Identifier(n) = &parser.advance().token_type {
             name = n.clone();
         } else {
-            panic!("Expected an identifier");
+            return Err(CompilerError::expected("Identifier", parser.current(), true));
         }
+
+        println!("{}", format!("Discovered macro {}", name).black());
 
         // expect open parenthesis
         if !matches!(parser.advance().token_type, TokenType::OpenParenthesis) {
-            panic!("Expected an open parenthesis");
+            return Err(CompilerError::expected("Open Parenthesis", parser.current(), true));
         }
 
         // grab arguments
         let mut arguments: HashMap<String, usize> = HashMap::new();
         let mut index = 0;
         loop {
-            println!("{:?}", parser.peek());
             match &parser.peek().token_type {
                 TokenType::CloseParenthesis => {
                     parser.advance(); // advance past close parenthesis
@@ -52,18 +53,19 @@ impl Macro {
                     
                     parser.advance();
                 },
-                _ => panic!("Expected a close parenthesis or identifier")
+                _ => return Err(CompilerError::expected("Close Parenthesis or Identifier", parser.current(), true))
+    
             }
         }
 
         // expect colon
         if !matches!(parser.advance().token_type, TokenType::Colon) {
-            panic!("Expected a colon");
+            return Err(CompilerError::expected("Colon", parser.current(), true));        
         }
         
         // expect new line
         if !matches!(parser.advance().token_type, TokenType::NewLine) {
-            panic!("Expected new line")
+            return Err(CompilerError::expected("New Line", parser.current(), true));
         }
 
         // collect all the tokens inside the macro
@@ -72,8 +74,6 @@ impl Macro {
         // cry
         'token_collection: while !parser.is_at_end() {
             'new_lines: loop {
-                //parser.skip_new_lines();
-                
                 while matches!(parser.peek().token_type, TokenType::NewLine) {
                     tokens.push(parser.advance().clone());
                 }
@@ -94,17 +94,17 @@ impl Macro {
             }
         }
 
-        Macro {
+        Ok(Macro {
             name,
             tokens,
             arguments
-        }
+        })
     }
 }
 
 #[derive(Debug)]
 pub enum MacroHolder {
-    Placeholder(String, Vec<Token>),
+    Placeholder(String, Vec<Token>, Token),
     Macro(MacroNode)
 }
 
@@ -116,7 +116,7 @@ pub struct MacroNode {
 
 // similar functions to Node
 impl MacroNode {
-    pub fn populate(definition: &Macro, args: &Vec<Token>) -> MacroNode {
+    pub fn populate(definition: &Macro, args: &Vec<Token>) -> Result<MacroNode, Vec<CompilerError>> {
         // replace arguments
         let mut tokens: Vec<Token> = Vec::new();
 
@@ -130,14 +130,31 @@ impl MacroNode {
             tokens.push(token.clone());
         }
 
-        tokens.push(Token::new(TokenType::EndOfFile, -1));
+        tokens.push(Token::new(TokenType::EndOfFile, -1, "unknown".to_string()));
 
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(tokens, String::from("main.bread"));
 
-        MacroNode {
-            instructions: get_instructions(&mut parser),
-            placeholders: HashMap::new()
+        let instructions = get_instructions(&mut parser)?;
+
+        let mut errors: Vec<CompilerError> = Vec::new();
+        for instruction in &instructions {
+            if let InstructionNode::Macro(holder) = instruction {
+                if let MacroHolder::Placeholder(_, _, token) = holder {
+                    errors.push(CompilerError::from_token(ErrorCode::MacroCallsMacro, token, true))
+                } else {
+                    panic!("Macro call inside of macro was populated")
+                }
+            }
         }
+
+        if !errors.is_empty() {
+            return Err(errors)
+        }
+
+        Ok(MacroNode {
+            instructions,
+            placeholders: HashMap::new()
+        })
     }
 
     pub fn get_size(&self) -> i32 {

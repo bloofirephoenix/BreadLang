@@ -1,6 +1,4 @@
-use core::panic;
-
-use crate::compiling::lexer::TokenType;
+use crate::compiling::{error_handler::{CompilerError, ErrorCode}, lexer::TokenType};
 
 use super::{Node, Parser};
 
@@ -8,8 +6,12 @@ use super::{Node, Parser};
 pub struct Imm8(u8);
 
 impl Node for Imm8 {
-    fn populate(parser: &mut Parser) -> Self where Self: Sized {
-        Imm8(u8::try_from(get_number(parser)).unwrap())
+    fn populate(parser: &mut Parser) -> Result<Imm8, CompilerError> {
+        let num = get_number(parser)?;
+        match u8::try_from(num) {
+            Ok(n) => Ok(Imm8(n)),
+            Err(_) => Err(CompilerError::from_token(ErrorCode::NumberTooBig(num), parser.current(), false)),
+        }
     }
 
     fn get_size(&self) -> i32 {
@@ -25,9 +27,12 @@ impl Node for Imm8 {
 pub struct Imm16(u16);
 
 impl Node for Imm16 {
-    fn populate(parser: &mut Parser) -> Self where Self: Sized {
-        Imm16(u16::try_from(get_number(parser)).unwrap())
-    }
+    fn populate(parser: &mut Parser) -> Result<Imm16, CompilerError> {
+        let num = get_number(parser)?;
+        match u16::try_from(num) {
+            Ok(n) => Ok(Imm16(n)),
+            Err(_) => Err(CompilerError::from_token(ErrorCode::NumberTooBig(num), parser.current(), false)),
+        }    }
 
     fn get_size(&self) -> i32 {
         2
@@ -44,7 +49,7 @@ impl Imm16 {
     }
 }
 
-fn get_number(parser: &mut Parser) -> i32 {
+fn get_number(parser: &mut Parser) -> Result<i32, CompilerError> {
     let token = parser.advance();
     if let TokenType::Number(num) = &token.token_type {
         let num = num.replace("_", "");
@@ -61,9 +66,11 @@ fn get_number(parser: &mut Parser) -> i32 {
         }
 
         return match result {
-            Ok(num) => num,
-            Err(e) => panic!("Invalid number: {}", e)
+            Ok(num) => Ok(num),
+            Err(_) => {
+                Err(CompilerError::from_token(ErrorCode::InvalidNumber, token, false))
+            }
         }
     }
-    panic!("Expected a number")
+    Err(CompilerError::expected("Number", token, false))
 }

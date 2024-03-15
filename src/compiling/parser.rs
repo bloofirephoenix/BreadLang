@@ -2,15 +2,17 @@ pub mod number_nodes;
 mod instruction_node;
 mod subroutine_node;
 pub mod program_node;
+mod register_node;
 mod macros;
+mod reg_imm_node;
+mod placeholder_node;
 
-use core::panic;
-use std::fs;
-use self::{number_nodes::{Imm16, Imm8}, program_node::ProgramNode};
+use std::{fs, path::Path};
+use self::program_node::ProgramNode;
 
-use super::{compiler::Compiler, lexer::{scan_tokens, Register, Token, TokenType}};
+use super::{compiler::Compiler, error_handler::{CompilerError, ErrorCode}, lexer::{scan_tokens, Token, TokenType}};
 
-pub fn parse(tokens: Vec<Token>, file: String) -> ProgramNode {
+pub fn parse(tokens: Vec<Token>, file: String) -> Result<ProgramNode, Vec<CompilerError>> {
     let mut parser = Parser::new(tokens, file);
     ProgramNode::populate(&mut parser)
 }
@@ -77,131 +79,41 @@ impl Parser {
     }
 
     // files
-    fn add_file(&mut self, file: &String) {
+    fn add_file(&mut self, file: &String) -> Result<(), CompilerError> {
         if !self.files.contains(file) {
+            let path = Path::new(&file);
+
+            if !path.exists() {
+                return Err(CompilerError::new(
+                    ErrorCode::NoSuchFile(file.clone()), &self.current().file, self.current().line, true)
+                );
+            }
+
             self.files.push(file.clone());
 
             // read a file
             let contents = fs::read_to_string(file)
                 .expect(&format!("Unable to read file {}", file));
             
-            let mut tokens = scan_tokens(contents);
+            
+
+            let mut tokens: Vec<Token>;
+
+            match scan_tokens(contents, file.clone()) {
+                Ok(t) => tokens = t,
+                Err(e) => return Err(e),
+            }
+
             tokens.remove(tokens.len() - 1); // remove end of file token
             self.insert(tokens);
         }
+
+        return Ok(());
     }
 }
 
 pub trait Node {
-    fn populate(parser: &mut Parser) -> Self where Self: Sized;
+    fn populate(parser: &mut Parser) -> Result<Self, CompilerError> where Self: Sized;
     fn get_size(&self) -> i32;
     fn compile(&self, compiler: &mut Compiler);
-}
-// misc nodes
-
-#[derive(Debug)]
-enum PlaceholderOrImmNode {
-    PlaceholderNode(PlaceholderNode),
-    Imm16(Imm16)
-}
-
-impl Node for PlaceholderOrImmNode {
-    fn populate(parser: &mut Parser) -> Self where Self: Sized {
-        match parser.peek().token_type {
-            TokenType::Identifier(_) => PlaceholderOrImmNode::PlaceholderNode(PlaceholderNode::populate(parser)),
-            TokenType::Number(_) => PlaceholderOrImmNode::Imm16(Imm16::populate(parser)),
-            _ => panic!("Expected Identifier or Number")
-        }
-    }
-
-    fn get_size(&self) -> i32 {
-        return 2;
-    }
-
-    fn compile(&self, compiler: &mut Compiler) {
-        match self {
-            PlaceholderOrImmNode::PlaceholderNode(node) => node.compile(compiler),
-            PlaceholderOrImmNode::Imm16(node) => node.compile(compiler)
-        }
-    }
-}
-
-#[derive(Debug)]
-struct PlaceholderNode {
-    name: String
-}
-
-impl Node for PlaceholderNode {
-    fn populate(parser: &mut Parser) -> PlaceholderNode {
-        let identifier = parser.advance();
-        if let TokenType::Identifier(str) = &identifier.token_type {
-            PlaceholderNode {
-                name: String::from(str)
-            }
-        } else {
-            panic!("Expected identifier");
-        }
-    }
-
-    fn get_size(&self) -> i32 {
-        2
-    }
-
-    fn compile(&self, compiler: &mut Compiler) {
-        if compiler.scope.contains_key(&self.name) {
-            let value = compiler.scope.get(&self.name).unwrap().clone();
-            value.compile(compiler);
-        } else {
-            panic!("Placeholder does not exist")
-        }
-    }
-}
-
-#[derive(Debug)]
-enum RegOrImmNode {
-    Immediate(Imm8),
-    Register(RegisterNode)
-}
-
-impl Node for RegOrImmNode {
-    fn populate(parser: &mut Parser) -> RegOrImmNode {
-        let token = parser.peek();
-        match token.token_type {
-            TokenType::Register(_) => {
-                RegOrImmNode::Register(RegisterNode::populate(parser))
-            },
-            TokenType::Number(_) => {
-                RegOrImmNode::Immediate(Imm8::populate(parser))
-            },
-            _ => panic!("Expected Register or Immediate 8")
-        }
-    }
-
-    fn get_size(&self) -> i32 {
-        panic!("Requesting the size of a RegOrImmNode is not a valid operation")
-    }
-    
-    fn compile(&self, compiler: &mut Compiler) {
-        panic!("Compiling a RegOrImmNode is not a valid operation");
-    }
-}
-
-#[derive(Debug)]
-struct RegisterNode(Register);
-
-impl Node for RegisterNode {
-    fn populate(parser: &mut Parser) -> RegisterNode {
-        match &parser.advance().token_type {
-            TokenType::Register(reg) => RegisterNode(reg.clone()),
-            _ => panic!("Invalid token {:?}. Expected register", parser.advance().token_type)
-        }
-    }
-
-    fn get_size(&self) -> i32 {
-        panic!("Requesting the size of a register is not a valid operation")
-    }
-    
-    fn compile(&self, compiler: &mut Compiler) {
-        panic!("Compiling a RegisterNode is not a valid operation")
-    }
 }

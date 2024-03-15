@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::compiling::lexer::TokenType;
+use colored::Colorize;
+
+use crate::compiling::{error_handler::{CompilerError, ErrorCode}, lexer::TokenType};
 
 use super::{instruction_node::InstructionNode, macros::{Macro, MacroHolder, MacroNode}, number_nodes::Imm16, Node, Parser};
 
@@ -11,8 +13,8 @@ pub struct SubroutineNode {
     placeholders: HashMap<String, Imm16>
 }
 
-impl Node for SubroutineNode {
-    fn populate(parser: &mut Parser) -> Self {
+impl SubroutineNode {
+    pub fn populate(parser: &mut Parser) -> Result<SubroutineNode, Vec<CompilerError>> {
         parser.skip_new_lines();
 
         // identifier
@@ -21,27 +23,29 @@ impl Node for SubroutineNode {
         if let TokenType::Identifier(n) = &identifier.token_type {
             name = n.clone();
         } else {
-            panic!("Expected identifier. Found {:?}", identifier.token_type)
+            return Err(vec![CompilerError::expected("Identifier", identifier, true)]);
         }
+
+        println!("{}", format!("Discovered subroutine {}", name).black());
         
         // expect colon
         if !matches!(parser.advance().token_type, TokenType::Colon) {
-            panic!("Expected colon {:?}", parser.current().token_type)
+            return Err(vec![CompilerError::expected("Colon", parser.current(), true)]);
         }
 
         // expect new line
         if !matches!(parser.advance().token_type, TokenType::NewLine) {
-            panic!("Expected new line")
+            return Err(vec![CompilerError::expected("New Line", parser.current(), true)]);
         }
 
-        SubroutineNode {
+        Ok(SubroutineNode {
             name,
-            instructions: get_instructions(parser),
+            instructions: get_instructions(parser)?,
             placeholders: HashMap::new()
-        }
+        })
     }
 
-    fn get_size(&self) -> i32 {
+    pub fn get_size(&self) -> i32 {
         let mut size = 0;
         
         for node in &self.instructions {
@@ -51,7 +55,7 @@ impl Node for SubroutineNode {
         size
     }
     
-    fn compile(&self, compiler: &mut crate::compiling::compiler::Compiler) {
+    pub fn compile(&self, compiler: &mut crate::compiling::compiler::Compiler) {
         compiler.scope = self.placeholders.clone();
         for instructions in &self.instructions {
             instructions.compile(compiler);
@@ -88,24 +92,33 @@ impl SubroutineNode {
         }
     }
 
-    pub fn populate_macros(&mut self, macros: &HashMap<String, Macro>) {
+    pub fn populate_macros(&mut self, macros: &HashMap<String, Macro>) -> Result<(), Vec<CompilerError>> {
         for instruction in &mut self.instructions {
             if let InstructionNode::Macro(holder) = instruction {
-                if let MacroHolder::Placeholder(name, args) = holder {
-                    let m = macros.get(name).unwrap(); // todo
-                    *instruction = InstructionNode::Macro(MacroHolder::Macro(MacroNode::populate(m, args)));
+                if let MacroHolder::Placeholder(name, args, token) = holder {
+                    let m = macros.get(name);
+                    
+                    if let Some(m) = m {
+                        *instruction = InstructionNode::Macro(MacroHolder::Macro(MacroNode::populate(m, args)?));
+                    } else {
+                        return Err(vec![CompilerError::from_token(ErrorCode::NoSuchMacro(name.clone()), token, false)]);
+                    }
                 }
             }
         }
+
+        Ok(())
     }
 }
 
-pub fn get_instructions(parser: &mut Parser) -> Vec<InstructionNode> {
+pub fn get_instructions(parser: &mut Parser) -> Result<Vec<InstructionNode>, Vec<CompilerError>> {
     let mut instructions: Vec<InstructionNode> = Vec::new();
+    let mut errors: Vec<CompilerError> = Vec::new();
 
     'parser: while !parser.is_at_end() {
         'lines: loop {
             parser.skip_new_lines();
+
             if !matches!(parser.peek().token_type, TokenType::Indent(_)) {
                 break 'parser;
             }
@@ -116,8 +129,27 @@ pub fn get_instructions(parser: &mut Parser) -> Vec<InstructionNode> {
                 break 'lines;
             }
         }
-        instructions.push(InstructionNode::populate(parser));
+        match InstructionNode::populate(parser) {
+            Ok(i) => { 
+                instructions.push(i);
+
+                while !matches!(parser.peek().token_type, TokenType::NewLine | TokenType::EndOfFile) {
+                    errors.push(CompilerError::expected("New Line", parser.advance(), false))
+                }
+            },
+            Err(e) => {
+                errors.push(e);
+                // advance until new line
+                while !matches!(parser.peek().token_type, TokenType::NewLine | TokenType::EndOfFile) {
+                    parser.advance();
+                }
+            }
+        }
     }
     
-    instructions
+    if errors.is_empty() {
+        Ok(instructions)
+    } else {
+        Err(errors)
+    }
 }

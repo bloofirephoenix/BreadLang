@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{lexer::{Instruction, Register}, parser::number_nodes::Imm16};
+use super::{parser::number_nodes::Imm16, Instruction, Register};
 
 pub struct Compiler {
     pub bytes: Vec<u8>,

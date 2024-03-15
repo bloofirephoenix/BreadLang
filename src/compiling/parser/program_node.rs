@@ -1,31 +1,59 @@
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap, error, ops::Sub};
 
-use crate::compiling::lexer::{scan_tokens, TokenType};
+use crate::compiling::{error_handler::{self, CompilerError, ErrorCode}, lexer::TokenType};
 
-use super::{macros::Macro, number_nodes::Imm16, subroutine_node::SubroutineNode, Node, Parser};
+use super::{macros::Macro, number_nodes::Imm16, subroutine_node::SubroutineNode, Parser};
 
 #[derive(Debug)]
 pub struct ProgramNode {
     subroutines: Vec<SubroutineNode>,
     placeholders: HashMap<String, Imm16>,
-    macros: HashMap<String, Macro>
 }
 
-impl Node for ProgramNode {
-    fn populate(parser: &mut Parser) -> ProgramNode {
+impl ProgramNode {
+    pub fn populate(parser: &mut Parser) -> Result<ProgramNode, Vec<CompilerError>> {
         let mut subroutines: Vec<SubroutineNode> = Vec::new();
         let mut macros: HashMap<String, Macro> = HashMap::new();
+        let mut errors: Vec<CompilerError> = Vec::new();
+
+        let mut main = false;
 
         'parser: while !parser.is_at_end() {
             parser.skip_new_lines();
 
+            let file = parser.peek().file.clone();
+
             match parser.peek().token_type {
                 TokenType::EndOfFile => break 'parser,
                 TokenType::Macro => {
-                    let m = Macro::populate(parser);
-                    macros.insert(m.name.clone(), m);
+                    match Macro::populate(parser) {
+                        Ok(m) => {
+                            macros.insert(m.name.clone(), m);
+                        },
+                        Err(e) => return Err(vec![e]),
+                    }
                 }
-                TokenType::Identifier(_) => subroutines.push(SubroutineNode::populate(parser)),
+                TokenType::Identifier(_) => {
+                    let sub = SubroutineNode::populate(parser);
+                    match sub {
+                        Ok(sub) => {
+                            if sub.name == "main" && file == "main.bread" {
+                                main = true;
+                                subroutines.insert(0, sub)
+                            } else {
+                                subroutines.push(sub)
+                            }
+                        },
+                        Err(mut err) => {
+                            if error_handler::has_critical(&err) {
+                                errors.append(&mut err);
+                                return Err(errors);
+                            } else {
+                                errors.append(&mut err);
+                            }
+                        }
+                    }
+                },
                 TokenType::Include => {
                     parser.advance(); // advance past include
 
@@ -40,40 +68,53 @@ impl Node for ProgramNode {
                         panic!("Expected a valid path");
                     }
 
-                    parser.add_file(&String::from(path.trim()));
+                    if let Err(e) = parser.add_file(&String::from(path.trim())) {
+                        errors.push(e);
+                        return Err(errors);
+                    }
                 }
-                _ => panic!("Expected a macro, subroutine, include, or end of file. Found {:?}", parser.peek())
+                _ => {
+                    errors.push(
+                        CompilerError::expected("macro, subroutine, include, or end of file", parser.peek(), false));
+                    parser.advance();
+                }
             }
+        }
+
+        if !main {
+            errors.push(CompilerError::new(ErrorCode::NoMainSubroutine, &"main.bread".to_string(), 0, true));
+            return Err(errors);
         }
 
         // populate macros
         for sub in &mut subroutines {
-            sub.populate_macros(&macros);
+            if let Err(mut e) = sub.populate_macros(&macros) {
+                if error_handler::has_critical(&e) {
+                    errors.append(&mut e);
+                    return Err(errors);
+                } else {
+                    errors.append(&mut e);
+                }
+            }
+        }
+
+        if !errors.is_empty() {
+            return Err(errors);
         }
 
         let mut node = ProgramNode {
             subroutines,
             placeholders: HashMap::new(),
-            macros
         };
 
         node.calculate_placeholders();
 
-        node
+        Ok(node)
     }
-
-    fn get_size(&self) -> i32 {
-        let mut size = 0;
-
-        for node in &self.subroutines {
-            size += node.get_size();
-        }
-
-        size
-    }
-    
-    fn compile(&self, compiler: &mut crate::compiling::compiler::Compiler) {
+        
+    pub fn compile(&self, compiler: &mut crate::compiling::compiler::Compiler) {
         compiler.scope = self.placeholders.clone();
+
         for sub in &self.subroutines {
             sub.compile(compiler);
         }
