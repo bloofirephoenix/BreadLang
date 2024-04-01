@@ -1,14 +1,16 @@
 #[macro_use] extern crate enum_primitive;
 
-use std::{env, fs::{DirBuilder, File}, io::Write, path::Path};
+use std::{env, fs::{self, DirBuilder, File}, io::Write, path::Path};
 
 use colored::Colorize;
 use compiling::error_handler;
 
-use crate::{compiling::compile, run::run};
+use crate::{compiling::compile, run::run, upload::upload};
 
 pub mod compiling;
 pub mod run;
+mod upload;
+mod special_programs;
 
 fn main() {
     let v = env!("CARGO_PKG_VERSION");
@@ -39,9 +41,59 @@ fn main() {
         "build" => {
             let _ = build();
         },
-        "new" => {
-            new();
-        }
+        "new" => new(),
+        "upload" => {
+            let program: Vec<u8>;
+            if arguments.len() > 0 {
+                // read file to upload
+                match arguments[0].as_str() {
+                    "--display" => {
+                        program = special_programs::segment_display();
+                    },
+                    "--brain" => {
+                        if arguments.len() < 2 {
+                            usage();
+                            return;
+                        } else {
+                            let input = &arguments[1];
+                            let byte_select: u8;
+                            if let Ok(num) = input.trim().parse::<u8>() {
+                                byte_select = num;
+                            } else {
+                                error_handler::print_error("Invalid number");
+                                return;
+                            }
+                            program = match special_programs::brain::get_program(byte_select) {
+                                Ok(p) => p,
+                                Err(msg) => {
+                                    error_handler::print_error(&msg);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    _ => {
+                        match fs::read(&arguments[0]) {
+                            Ok(p) => {
+                                program = p;
+                            },
+                            Err(e) => {
+                                error_handler::print_error(&format!("Failed to read file {}", e));
+                                return;
+                            }
+                        }
+                    }
+                }
+            } else {
+                if let Ok(b) = build() {
+                    program = b;
+                } else {
+                    return;
+                }
+            }
+            
+            upload(program);
+        },
         _ => usage(),
     }
 }
@@ -94,4 +146,5 @@ fn usage() {
     println!("  BreadLang run [--debug]");
     println!("  BreadLang build");
     println!("  BreadLang new");
+    println!("  BreadLang upload");
 }
