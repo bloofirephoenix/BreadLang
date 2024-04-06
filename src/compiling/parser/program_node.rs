@@ -65,7 +65,10 @@ impl ProgramNode {
                     }
 
                     if path.is_empty() {
-                        panic!("Expected a valid path");
+                        errors.push(
+                            CompilerError::expected("valid path", parser.current(), true)
+                        );
+                        return Err(errors);
                     }
 
                     if let Err(e) = parser.add_file(&String::from(path.trim())) {

@@ -102,8 +102,6 @@ impl Tokenizer {
 }
 
 pub fn scan_tokens(text: String, filename: String) -> Result<Vec<Token>, CompilerError> {
-    println!("{}", format!("Discovered file {}", filename).black());
-
     let mut tokenizer = Tokenizer::new(text, filename);
 
     while !tokenizer.is_at_end() {

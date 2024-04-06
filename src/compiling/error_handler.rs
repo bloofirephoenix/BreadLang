@@ -47,6 +47,11 @@ pub fn has_critical(errors: &Vec<CompilerError>) -> bool {
 pub fn print_error(msg: &str) {
     println!("{}: {}", "[Error]".red().bold(), msg);
 }
+
+pub fn print_warning(msg: &str) {
+    println!("{}: {}", "[Warning]".yellow().bold(), msg);
+}
+
 pub enum ErrorCode {
     // lexer errors
     InvalidNumber,

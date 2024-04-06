@@ -30,9 +30,7 @@ impl Macro {
         } else {
             return Err(CompilerError::expected("Identifier", parser.current(), true));
         }
-
-        println!("{}", format!("Discovered macro {}", name).black());
-
+        
         // expect open parenthesis
         if !matches!(parser.advance().token_type, TokenType::OpenParenthesis) {
             return Err(CompilerError::expected("Open Parenthesis", parser.current(), true));

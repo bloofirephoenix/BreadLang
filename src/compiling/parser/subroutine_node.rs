@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use colored::Colorize;
 
-use crate::compiling::{error_handler::{CompilerError, ErrorCode}, lexer::TokenType};
+use crate::compiling::{error_handler::{self, CompilerError, ErrorCode}, lexer::TokenType};
 
 use super::{instruction_node::InstructionNode, macros::{Macro, MacroHolder, MacroNode}, number_nodes::Imm16, Node, Parser};
 
@@ -26,8 +26,6 @@ impl SubroutineNode {
             return Err(vec![CompilerError::expected("Identifier", identifier, true)]);
         }
 
-        println!("{}", format!("Discovered subroutine {}", name).black());
-        
         // expect colon
         if !matches!(parser.advance().token_type, TokenType::Colon) {
             return Err(vec![CompilerError::expected("Colon", parser.current(), true)]);
@@ -38,9 +36,19 @@ impl SubroutineNode {
             return Err(vec![CompilerError::expected("New Line", parser.current(), true)]);
         }
 
+        let instructions = get_instructions(parser)?;
+
+        if !matches!(instructions.last(), Some(InstructionNode::HLT) | Some(InstructionNode::JMP(_)) | None) {
+            error_handler::print_warning(&format!("Subroutine {} does not end in HLT or JMP", name));
+        }
+
+        if matches!(instructions.last(), None) {
+            error_handler::print_warning(&format!("Subroutine {} does not contain any instructions", name));
+        }
+
         Ok(SubroutineNode {
             name,
-            instructions: get_instructions(parser)?,
+            instructions,
             placeholders: HashMap::new()
         })
     }
