@@ -40,11 +40,12 @@ enum Signal {
     RamHIn          = 0b00000010_00000000_00000000_00000000,
     RamOut          = 0b00000100_00000000_00000000_00000000,
     RamIn           = 0b00001000_00000000_00000000_00000000,
+    RamAddrClear    = 0b00010000_00000000_00000000_00000000,
     // OUT
-    DisplayIn       = 0b00010000_00000000_00000000_00000000,
-    GenericOutIn    = 0b00100000_00000000_00000000_00000000,
+    DisplayIn       = 0b00100000_00000000_00000000_00000000,
+    GenericOutIn    = 0b01000000_00000000_00000000_00000000,
     // MISC
-    Halt            = 0b01000000_00000000_00000000_00000000,
+    Halt            = 0b10000000_00000000_00000000_00000000,
 }
 
 enum Input {
@@ -165,16 +166,20 @@ fn get_signal(address: u32) -> u32 {
                 Instruction::PUSH => {
                     if immediate {
                         match micro_op {
-                            2 => Signal::StackIn | Signal::ROMOut,
-                            3 => Signal::StackUp as u32,
-                            4 => Signal::PCUp as u32,
+                            2 => Signal::RamAddrClear as u32,
+                            3 => Signal::StackOut | Signal::RamLIn,
+                            4 => Signal::RamIn | Signal::ROMOut,
+                            5 => Signal::PCUp as u32,
+                            6 => Signal::StackUp as u32,
                             _ => Signal::MicroOpsReset as u32,
                         }
                     } else {
                         let reg_a = Register::from_u32(reg_a).unwrap();
                         match micro_op {
-                            2 => Signal::StackIn | get_reg_out(reg_a),
-                            3 => Signal::StackUp as u32,
+                            2 => Signal::RamAddrClear as u32,
+                            3 => Signal::StackOut | Signal::RamLIn,
+                            4 => Signal::RamIn | get_reg_out(reg_a),
+                            5 => Signal::StackUp as u32,
                             _ => Signal::MicroOpsReset as u32,
                         }
                     }
@@ -183,7 +188,9 @@ fn get_signal(address: u32) -> u32 {
                     let reg_a = Register::from_u32(reg_a).unwrap();
                     match micro_op {
                         2 => Signal::StackDown as u32,
-                        3 => Signal::StackOut | get_reg_in(reg_a),
+                        3 => Signal::RamAddrClear as u32,
+                        4 => Signal::StackOut | Signal::RamLIn,
+                        5 => Signal::RamOut | get_reg_in(reg_a),
                         _ => Signal::MicroOpsReset as u32,
                     }
                 },
