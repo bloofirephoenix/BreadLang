@@ -118,8 +118,8 @@ fn get_signal(address: u32) -> u32 {
                         }
                     } else {
                         match micro_op {
-                            2 => Signal::LOut | Signal::RamHIn,
-                            3 => Signal::HOut | Signal::RamLIn,
+                            2 => Signal::HOut | Signal::RamHIn,
+                            3 => Signal::LOut | Signal::RamLIn,
                             4 => Signal::RamOut | get_reg_in(reg_a),
                             _ => Signal::MicroOpsReset as u32,
                         }
@@ -138,8 +138,8 @@ fn get_signal(address: u32) -> u32 {
                         }
                     } else {
                         match micro_op {
-                            2 => Signal::LOut | Signal::RamHIn,
-                            3 => Signal::HOut | Signal::RamLIn,
+                            2 => Signal::HOut | Signal::RamHIn,
+                            3 => Signal::LOut | Signal::RamLIn,
                             4 => Signal::RamIn | get_reg_out(reg_a),
                             _ => Signal::MicroOpsReset as u32,
                         }
@@ -169,8 +169,7 @@ fn get_signal(address: u32) -> u32 {
                             2 => Signal::RamAddrClear as u32,
                             3 => Signal::StackOut | Signal::RamLIn,
                             4 => Signal::RamIn | Signal::ROMOut,
-                            5 => Signal::PCUp as u32,
-                            6 => Signal::StackUp as u32,
+                            5 => Signal::PCUp | Signal::StackUp,
                             _ => Signal::MicroOpsReset as u32,
                         }
                     } else {
@@ -209,8 +208,7 @@ fn get_signal(address: u32) -> u32 {
                             2 => Signal::ROMOut | Signal::PCHIn,
                             3 => Signal::PCUp as u32,
                             4 => Signal::ROMOut | Signal::PCLIn,
-                            5 => Signal::PCUp as u32,
-                            6 => Signal::PCApply as u32,
+                            5 => Signal::PCApply as u32,
                             _ => Signal::MicroOpsReset as u32,
                         }
                     } else {
@@ -236,8 +234,7 @@ fn get_signal(address: u32) -> u32 {
                                 2 => Signal::ROMOut | Signal::PCHIn,
                                 3 => Signal::PCUp as u32,
                                 4 => Signal::ROMOut | Signal::PCLIn,
-                                5 => Signal::PCUp as u32,
-                                6 => Signal::PCApply as u32,
+                                5 => Signal::PCApply as u32,
                                 _ => Signal::MicroOpsReset as u32,                            
                             }
                         } else {
@@ -261,8 +258,7 @@ fn get_signal(address: u32) -> u32 {
                                 2 => Signal::ROMOut | Signal::RamHIn,
                                 3 => Signal::PCUp as u32,
                                 4 => Signal::ROMOut | Signal::RamLIn,
-                                5 => Signal::PCUp as u32,
-                                6 => Signal::PCApply as u32,
+                                5 => Signal::PCApply as u32,
                                 _ => Signal::MicroOpsReset as u32,                            
                             }
                         } else {
@@ -283,8 +279,7 @@ fn get_signal(address: u32) -> u32 {
                         match micro_op {
                             2 => Signal::AluAIn | get_reg_out(reg_a),
                             3 => Signal::AluBIn | Signal::ROMOut,
-                            4 => Signal::PCUp as u32,
-                            5 => Signal::SumsOut | get_reg_in(reg_a),
+                            4 => Signal::PCUp | Signal::SumsOut | get_reg_in(reg_a),
                             _ => Signal::MicroOpsReset as u32,
                         }
                     } else {
@@ -303,8 +298,7 @@ fn get_signal(address: u32) -> u32 {
                         match micro_op {
                             2 => Signal::AluAIn | get_reg_out(reg_a),
                             3 => Signal::AluBIn | Signal::ROMOut,
-                            4 => Signal::PCUp as u32,
-                            5 => Signal::Subtract | Signal::SumsOut | get_reg_in(reg_a),
+                            4 => Signal::PCUp | Signal::Subtract | Signal::SumsOut | get_reg_in(reg_a),
                             _ => Signal::MicroOpsReset as u32,
                         }
                     } else {
@@ -312,7 +306,7 @@ fn get_signal(address: u32) -> u32 {
                         match micro_op {
                             2 => Signal::AluAIn | get_reg_out(reg_a),
                             3 => Signal::AluBIn | get_reg_out(reg_b),
-                            5 => Signal::Subtract | Signal::SumsOut | get_reg_in(reg_a),
+                            4 => Signal::Subtract | Signal::SumsOut | get_reg_in(reg_a),
                             _ => Signal::MicroOpsReset as u32,
                         }
                     }
@@ -322,6 +316,7 @@ fn get_signal(address: u32) -> u32 {
                     if immediate {
                         match micro_op {
                             2 => Signal::DisplayIn | Signal::ROMOut,
+                            3 => Signal::PCUp as u32,
                             _ => Signal::MicroOpsReset as u32,
                         }
                     } else {
