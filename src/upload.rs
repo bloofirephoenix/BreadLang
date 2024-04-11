@@ -1,4 +1,4 @@
-use std::{io::{stdin, stdout, Write}, thread::sleep, time::Duration};
+use std::{io::{stdin, stdout, Write}, thread::sleep, time::{Duration, SystemTime}};
 
 use colored::Colorize;
 use serialport::{available_ports, SerialPort, SerialPortInfo};
@@ -10,7 +10,8 @@ enum ArduinoCommand {
     Erase = 0,
     Write = 1,
     Ready = 2,
-    Verify = 3
+    Verify = 3,
+    Stop = 4
 }
 
 pub fn upload(program: Vec<u8>) {
@@ -51,20 +52,64 @@ pub fn upload(program: Vec<u8>) {
         .open().expect("Failed to open port");
 
     wait_until_ready(&mut port);
-
     println!("{}", "Erasing chip".black());
     write_command(&mut port, ArduinoCommand::Erase);
-    
     wait_until_ready(&mut port);
+
     println!("{}", "Uploading program".black());
-    write_command(&mut port, ArduinoCommand::Write);
-    for b in &program {
-        port.write(&[*b]).expect("Write failed!");
-        sleep(Duration::from_millis(5));
+
+    let max_buffer_size = 60;
+    let mut i = 0;
+    while i < program.len() {
+        let start = SystemTime::now();
+        let buffer_size = usize::min(program.len() - i, max_buffer_size);
+        let bytes = &program[i..i + buffer_size];
+        
+        // write the size of the buffer
+        write_command(&mut port, ArduinoCommand::Write);
+        wait_until_ready(&mut port);
+        port.write(&[buffer_size as u8]).expect("Write failed!");
+
+        wait_until_ready(&mut port);
+
+        // write buffer
+        port.write(bytes).expect("Write failed!");
+
+        wait_until_ready(&mut port);
+
+        i += buffer_size;
+
+        if i % (max_buffer_size * 10) == 0 {
+            let time = SystemTime::now().duration_since(start).unwrap().as_millis();
+            let mut time = (time / buffer_size as u128) * (program.len() - i) as u128;
+            let mut str = String::from("");
+
+            // hours
+            if time >= 3600000 {
+                let hours = time / 3600000;
+                time = time % 3600000;
+                str += &format!("{}h ", hours);
+            }
+            // minutes
+            if time >= 60000 {
+                let minutes = time / 60000;
+                time = time % 60000;
+                str += &format!("{}m ", minutes);
+            }
+
+            // seconds
+            if time >= 1000 {
+                let seconds = time / 1000;
+                time = time % 1000;
+                str += &format!("{}s", seconds);
+            }
+
+            println!("{}", format!("{}% ({} remaining)", ((i + 1) as f32 / program.len() as f32) * 100 as f32, str).black());
+        }
     }
+
     println!("{}", "Finished upload".black());
     
-    wait_until_ready(&mut port);
     println!("{}", "Verifying program".black());
     write_command(&mut port, ArduinoCommand::Verify);
     let mut current_address = 0;
@@ -75,21 +120,22 @@ pub fn upload(program: Vec<u8>) {
             port.read(buffer.as_mut_slice()).expect("Found no data!");
             for b in buffer {
                 if program[current_address] != b {
-                    error_handler::print_error(&format!("Verification failed! Expected {:#x} Found {:#x} at {:#x}", program[current_address], b, current_address));
+                    error_handler::print_error(&format!("Verification failed! Expected {} Found {} at {}", program[current_address], b, current_address));
                     return;
                 }
 
                 current_address += 1;
 
                 if current_address == program.len() {
+                    write_command(&mut port, ArduinoCommand::Stop);
                     break 'main_loop;
                 }
             }
         } else {
-            sleep(Duration::from_millis(10));
+            sleep(Duration::from_millis(1));
         }
     }
-
+    
     println!("{}", "Finished".green().bold());
 }
 
@@ -106,9 +152,11 @@ fn wait_until_ready(port: &mut Box<dyn SerialPort>) {
             for b in buffer {
                 if b == ArduinoCommand::Ready as u8 {
                     return;
+                } else {
+                    println!("Received weird byte {}", b);
                 }
             }
         }
-        sleep(Duration::from_millis(10));
+        sleep(Duration::from_millis(1));
     }
 }
