@@ -82,29 +82,8 @@ pub fn upload(program: Vec<u8>) {
         if i % (max_buffer_size * 10) == 0 {
             let time = SystemTime::now().duration_since(start).unwrap().as_millis();
             let mut time = (time / buffer_size as u128) * (program.len() - i) as u128;
-            let mut str = String::from("");
-
-            // hours
-            if time >= 3600000 {
-                let hours = time / 3600000;
-                time = time % 3600000;
-                str += &format!("{}h ", hours);
-            }
-            // minutes
-            if time >= 60000 {
-                let minutes = time / 60000;
-                time = time % 60000;
-                str += &format!("{}m ", minutes);
-            }
-
-            // seconds
-            if time >= 1000 {
-                let seconds = time / 1000;
-                time = time % 1000;
-                str += &format!("{}s", seconds);
-            }
-
-            println!("{}", format!("{}% ({} remaining)", ((i + 1) as f32 / program.len() as f32) * 100 as f32, str).black());
+            let time = format_time(time);
+            println!("{}", format!("{}% ({} remaining)", ((i + 1) as f32 / program.len() as f32) * 100 as f32, time).black());
         }
     }
 
@@ -129,6 +108,10 @@ pub fn upload(program: Vec<u8>) {
                 if current_address == program.len() {
                     write_command(&mut port, ArduinoCommand::Stop);
                     break 'main_loop;
+                }
+
+                if current_address % 1000 == 0 {
+                    println!("{}", format!("{}% done", (current_address as f32 / program.len() as f32) * 100.0).black());
                 }
             }
         } else {
@@ -159,4 +142,29 @@ fn wait_until_ready(port: &mut Box<dyn SerialPort>) {
         }
         sleep(Duration::from_millis(1));
     }
+}
+
+fn format_time(mut time: u128) -> String {
+    let mut str = String::from("");
+
+    // hours
+    if time >= 3600000 {
+        let hours = time / 3600000;
+        time = time % 3600000;
+        str += &format!("{}h ", hours);
+    }
+    // minutes
+    if time >= 60000 {
+        let minutes = time / 60000;
+        time = time % 60000;
+        str += &format!("{}m ", minutes);
+    }
+
+    // seconds
+    if time >= 1000 {
+        let seconds = time / 1000;
+        time = time % 1000;
+        str += &format!("{}s", seconds);
+    }
+    str.trim().to_string()
 }
