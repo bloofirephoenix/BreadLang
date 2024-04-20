@@ -1,7 +1,5 @@
 use super::{error_handler::{CompilerError, ErrorCode}, Instruction, Register};
 
-use colored::Colorize;
-
 #[derive(PartialEq, Debug, Clone)]
 pub enum TokenType {
     // literals
@@ -9,13 +7,13 @@ pub enum TokenType {
     Number(String),
 
     // 1 line char tokens
-    Comma,
+    //Comma,
     Colon,
     OpenParenthesis,
     CloseParenthesis,
 
     // keywords
-    Macro, 
+    Macro,
     Include,
     Def,
     Register(Register),
@@ -118,7 +116,7 @@ fn scan_token(tokenizer: &mut Tokenizer) -> Result<(), CompilerError> {
     match tokenizer.advance() {
 
         // 1 line chars
-        ',' => tokenizer.add_token(TokenType::Comma),
+        //',' => tokenizer.add_token(TokenType::Comma),
         ':' => tokenizer.add_token(TokenType::Colon),
         '(' => tokenizer.add_token(TokenType::OpenParenthesis),
         ')' => tokenizer.add_token(TokenType::CloseParenthesis),
@@ -240,5 +238,5 @@ fn is_alphanumeric(char: char) -> bool {
 
 fn is_alphabetic(char: char) -> bool {
     (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || 
-        char == '_' || char == '@' || char == '.' || char == '\\' || char == '/'
+        char == '_' || char == '@' || char == '.' || char == '\\' || char == '/' || char == '\''
 }
