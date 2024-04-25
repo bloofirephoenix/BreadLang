@@ -1,16 +1,16 @@
 use crate::compiling::{error_handler::{CompilerError, ErrorCode}, lexer::{Token, TokenType}, Instruction};
 
-use super::{macros::MacroHolder, number_nodes::Imm16, placeholder_node::{PlaceholderNode, PlaceholderOrImmNode}, reg_imm_node::RegOrImmNode, register_node::RegisterNode, Node, Parser};
+use super::{macros::MacroHolder, placeholder_node::{PlaceholderNode, PlaceholderOrImm16Node}, reg_imm_node::RegOrImmNode, register_node::RegisterNode, Node, Parser};
 
 #[derive(Debug)]
 pub enum InstructionNode {
     NOP,
-    LW(RegisterNode, Option<Imm16>),
-    SW(RegisterNode, Option<Imm16>),
+    LW(RegisterNode, Option<PlaceholderOrImm16Node>),
+    SW(RegisterNode, Option<PlaceholderOrImm16Node>),
     MW(RegisterNode, RegOrImmNode),
     PUSH(RegOrImmNode),
     POP(RegisterNode),
-    LDA(PlaceholderOrImmNode),
+    LDA(PlaceholderOrImm16Node),
     JMP(Option<PlaceholderNode>),
     JZ(RegisterNode, Option<PlaceholderNode>),
     JO(Option<PlaceholderNode>),
@@ -33,10 +33,10 @@ impl Node for InstructionNode {
             TokenType::Instruction(Instruction::NOP) => Ok(InstructionNode::NOP),
             TokenType::Instruction(Instruction::LW) => {
                 let register = RegisterNode::populate(parser);
-                let number: Option<Imm16>;
+                let number: Option<PlaceholderOrImm16Node>;
 
-                if matches!(parser.peek().token_type, TokenType::Number(_)) {
-                    number = Some(Imm16::populate(parser)?)
+                if matches!(parser.peek().token_type, TokenType::Number(_) | TokenType::Identifier(_)) {
+                    number = Some(PlaceholderOrImm16Node::populate(parser)?)
                 } else {
                     number = None;
                 }
@@ -45,10 +45,10 @@ impl Node for InstructionNode {
             },
             TokenType::Instruction(Instruction::SW) => {
                 let register = RegisterNode::populate(parser);
-                let number: Option<Imm16>;
+                let number: Option<PlaceholderOrImm16Node>;
 
-                if matches!(parser.peek().token_type, TokenType::Number(_)) {
-                    number = Some(Imm16::populate(parser)?)
+                if matches!(parser.peek().token_type, TokenType::Number(_) | TokenType::Identifier(_)) {
+                    number = Some(PlaceholderOrImm16Node::populate(parser)?)
                 } else {
                     number = None;
                 }
@@ -63,7 +63,7 @@ impl Node for InstructionNode {
             },
             TokenType::Instruction(Instruction::PUSH) => Ok(InstructionNode::PUSH(RegOrImmNode::populate(parser)?)),
             TokenType::Instruction(Instruction::POP) => Ok(InstructionNode::POP(RegisterNode::populate(parser)?)),
-            TokenType::Instruction(Instruction::LDA) => Ok(InstructionNode::LDA(PlaceholderOrImmNode::populate(parser)?)),
+            TokenType::Instruction(Instruction::LDA) => Ok(InstructionNode::LDA(PlaceholderOrImm16Node::populate(parser)?)),
             TokenType::Instruction(Instruction::JMP) => {
                 if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
                     Ok(InstructionNode::JMP(Some(PlaceholderNode::populate(parser)?)))
@@ -237,7 +237,7 @@ impl Node for InstructionNode {
                     None => compiler.first_byte(instruction, false, None),
                     Some(val) => {
                         compiler.first_byte(instruction, true, None);
-                        val.compile(compiler)
+                        val.compile(compiler, false)
                     }
                 }
             }
@@ -247,7 +247,7 @@ impl Node for InstructionNode {
                     None => compiler.first_byte(Instruction::JZ, false, Some(reg.0)),
                     Some(val) => {
                         compiler.first_byte(Instruction::JZ, true, Some(reg.0));
-                        val.compile(compiler)
+                        val.compile(compiler, false)
                     }
                 }
             }

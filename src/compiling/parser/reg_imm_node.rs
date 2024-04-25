@@ -1,10 +1,10 @@
 use crate::compiling::{compiler::Compiler, error_handler::CompilerError, lexer::TokenType};
 
-use super::{number_nodes::Imm8, register_node::RegisterNode, Node, Parser};
+use super::{placeholder_node::PlaceholderOrImm8Node, register_node::RegisterNode, Node, Parser};
 
 #[derive(Debug)]
 pub enum RegOrImmNode {
-    Immediate(Imm8),
+    Immediate(PlaceholderOrImm8Node),
     Register(RegisterNode)
 }
 
@@ -15,8 +15,8 @@ impl Node for RegOrImmNode {
             TokenType::Register(_) => {
                 Ok(RegOrImmNode::Register(RegisterNode::populate(parser)?))
             },
-            TokenType::Number(_) => {
-                Ok(RegOrImmNode::Immediate(Imm8::populate(parser)?))
+            TokenType::Number(_) | TokenType::Identifier(_) => {
+                Ok(RegOrImmNode::Immediate(PlaceholderOrImm8Node::populate(parser)?))
             },
             _ => {
                 Err(CompilerError::expected("Register or imm8", token, false))

@@ -16,6 +16,7 @@ pub enum TokenType {
     Macro,
     Include,
     Def,
+    Constant,
     Register(Register),
 
     Instruction(Instruction),
@@ -222,6 +223,7 @@ fn identifier(tokenizer: &mut Tokenizer) {
         "@macro" => tokenizer.add_token(TokenType::Macro),
         "@include" => tokenizer.add_token(TokenType::Include),
         "DEF" => tokenizer.add_token(TokenType::Def),
+        "const" => tokenizer.add_token(TokenType::Constant),
 
         "A" => tokenizer.add_token(TokenType::Register(Register::A)),
         "B" => tokenizer.add_token(TokenType::Register(Register::B)),

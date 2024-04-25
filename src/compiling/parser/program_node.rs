@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::compiling::{error_handler::{self, CompilerError, ErrorCode}, lexer::TokenType};
+use crate::compiling::{error_handler::{self, CompilerError, ErrorCode}, lexer::{Token, TokenType}};
 
-use super::{macros::Macro, number_nodes::Imm16, subroutine_node::SubroutineNode, Parser};
+use super::{macros::Macro, number_nodes::Imm16, subroutine_node::SubroutineNode, Node, Parser};
 
 #[derive(Debug)]
 pub struct ProgramNode {
@@ -15,6 +15,7 @@ impl ProgramNode {
         let mut subroutines: Vec<SubroutineNode> = Vec::new();
         let mut macros: HashMap<String, Macro> = HashMap::new();
         let mut errors: Vec<CompilerError> = Vec::new();
+        let mut placeholders: HashMap<String, Imm16> = HashMap::new();
 
         let mut main = false;
 
@@ -75,6 +76,23 @@ impl ProgramNode {
                         errors.push(e);
                         return Err(errors);
                     }
+                },
+                TokenType::Constant => {
+                    parser.advance(); // advance past constant
+                    let name = if let TokenType::Identifier(name) = &parser.advance().token_type {
+                        name.clone()
+                    } else {
+                        return Err(errors)
+                    };
+                    let value = match Imm16::populate(parser) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            errors.push(e);
+                            return Err(errors);
+                        }
+                    };
+
+                    placeholders.insert(name, value);
                 }
                 _ => {
                     errors.push(
@@ -107,7 +125,7 @@ impl ProgramNode {
 
         let mut node = ProgramNode {
             subroutines,
-            placeholders: HashMap::new(),
+            placeholders,
         };
 
         node.calculate_placeholders();
