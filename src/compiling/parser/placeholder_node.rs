@@ -1,14 +1,14 @@
 use crate::compiling::{compiler::Compiler, error_handler::CompilerError, lexer::TokenType};
 
-use super::{number_nodes::Imm16, Node, Parser};
+use super::{number_nodes::{Imm16, Imm8}, Node, Parser};
 
 #[derive(Debug)]
 pub struct PlaceholderNode {
     name: String
 }
 
-impl Node for PlaceholderNode {
-    fn populate(parser: &mut Parser) -> Result<PlaceholderNode, CompilerError> {
+impl PlaceholderNode {
+    pub fn populate(parser: &mut Parser) -> Result<PlaceholderNode, CompilerError> {
         let identifier = parser.advance();
         if let TokenType::Identifier(str) = &identifier.token_type {
             Ok(PlaceholderNode {
@@ -19,14 +19,15 @@ impl Node for PlaceholderNode {
         }
     }
 
-    fn get_size(&self) -> i32 {
-        2
-    }
-
-    fn compile(&self, compiler: &mut Compiler) {
+    pub fn compile(&self, compiler: &mut Compiler, imm8: bool) {
         if compiler.scope.contains_key(&self.name) {
             let value = compiler.scope.get(&self.name).unwrap().clone();
-            value.compile(compiler);
+
+            if imm8 {
+                Imm8::from_imm16(value).compile(compiler);
+            } else {
+                value.compile(compiler);
+            }
         } else {
             panic!("Placeholder does not exist")
         }
@@ -34,16 +35,16 @@ impl Node for PlaceholderNode {
 }
 
 #[derive(Debug)]
-pub enum PlaceholderOrImmNode {
+pub enum PlaceholderOrImm16Node {
     PlaceholderNode(PlaceholderNode),
     Imm16(Imm16)
 }
 
-impl Node for PlaceholderOrImmNode {
-    fn populate(parser: &mut Parser) -> Result<PlaceholderOrImmNode, CompilerError> {
+impl Node for PlaceholderOrImm16Node {
+    fn populate(parser: &mut Parser) -> Result<PlaceholderOrImm16Node, CompilerError> {
         match parser.peek().token_type {
-            TokenType::Identifier(_) => Ok(PlaceholderOrImmNode::PlaceholderNode(PlaceholderNode::populate(parser)?)),
-            TokenType::Number(_) => Ok(PlaceholderOrImmNode::Imm16(Imm16::populate(parser)?)),
+            TokenType::Identifier(_) => Ok(PlaceholderOrImm16Node::PlaceholderNode(PlaceholderNode::populate(parser)?)),
+            TokenType::Number(_) => Ok(PlaceholderOrImm16Node::Imm16(Imm16::populate(parser)?)),
             _ => {
                 Err(CompilerError::expected("Identifier or number", parser.peek(), false))
             }
@@ -56,8 +57,37 @@ impl Node for PlaceholderOrImmNode {
 
     fn compile(&self, compiler: &mut Compiler) {
         match self {
-            PlaceholderOrImmNode::PlaceholderNode(node) => node.compile(compiler),
-            PlaceholderOrImmNode::Imm16(node) => node.compile(compiler)
+            PlaceholderOrImm16Node::PlaceholderNode(node) => node.compile(compiler, false),
+            PlaceholderOrImm16Node::Imm16(node) => node.compile(compiler)
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum PlaceholderOrImm8Node {
+    PlaceholderNode(PlaceholderNode),
+    Imm8(Imm8)
+}
+
+impl Node for PlaceholderOrImm8Node {
+    fn populate(parser: &mut Parser) -> Result<PlaceholderOrImm8Node, CompilerError> {
+        match parser.peek().token_type {
+            TokenType::Identifier(_) => Ok(PlaceholderOrImm8Node::PlaceholderNode(PlaceholderNode::populate(parser)?)),
+            TokenType::Number(_) => Ok(PlaceholderOrImm8Node::Imm8(Imm8::populate(parser)?)),
+            _ => {
+                Err(CompilerError::expected("Identifier or number", parser.peek(), false))
+            }
+        }
+    }
+
+    fn get_size(&self) -> i32 {
+        return 2;
+    }
+
+    fn compile(&self, compiler: &mut Compiler) {
+        match self {
+            PlaceholderOrImm8Node::PlaceholderNode(node) => node.compile(compiler, true),
+            PlaceholderOrImm8Node::Imm8(node) => node.compile(compiler)
         }
     }
 }

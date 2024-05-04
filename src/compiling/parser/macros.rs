@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::compiling::{compiler::Compiler, error_handler::{CompilerError, ErrorCode}, lexer::{Token, TokenType}, parser::subroutine_node::get_instructions};
-use colored::Colorize;
 use super::{instruction_node::InstructionNode, number_nodes::Imm16, Node, Parser};
 
 #[derive(Debug)]
