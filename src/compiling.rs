@@ -59,7 +59,9 @@ pub fn compile() -> Result<Vec<u8>,()> {
         DirBuilder::new().create("bin").unwrap();
     }
     let mut file = File::create("bin/program.crumbs").unwrap();
-
+    //for b in &compiler.bytes {
+    //    println!("{:08b}", b);
+    //}
     file.write_all(&compiler.bytes).unwrap();
 
     return Ok(compiler.bytes);
@@ -81,8 +83,8 @@ enum_from_primitive! {
         JO   = 0b01001,
         ADD  = 0b01010,
         SUB  = 0b01011,
-        //   =  0b01100
-        TEL  = 0b01101,
+        //   = 0b01100,
+        //   = 0b01101,
         OUT  = 0b01110,
         HLT  = 0b01111,
 

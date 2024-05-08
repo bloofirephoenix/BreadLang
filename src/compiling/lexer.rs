@@ -215,7 +215,6 @@ fn identifier(tokenizer: &mut Tokenizer) {
         "JO" => tokenizer.add_token(TokenType::Instruction(Instruction::JO)),
         "ADD" => tokenizer.add_token(TokenType::Instruction(Instruction::ADD)),
         "SUB" => tokenizer.add_token(TokenType::Instruction(Instruction::SUB)),
-        "TEL" => tokenizer.add_token(TokenType::Instruction(Instruction::TEL)),
         "OUT" => tokenizer.add_token(TokenType::Instruction(Instruction::OUT)),
         "HLT" => tokenizer.add_token(TokenType::Instruction(Instruction::HLT)),
         

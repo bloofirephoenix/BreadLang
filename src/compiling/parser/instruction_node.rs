@@ -16,7 +16,6 @@ pub enum InstructionNode {
     JO(Option<PlaceholderNode>),
     ADD(RegisterNode, RegOrImmNode),
     SUB(RegisterNode, RegOrImmNode),
-    TEL(RegOrImmNode),
     OUT(RegOrImmNode),
     HLT,
 
@@ -90,8 +89,6 @@ impl Node for InstructionNode {
                 Ok(InstructionNode::ADD(RegisterNode::populate(parser)?, RegOrImmNode::populate(parser)?)),
             TokenType::Instruction(Instruction::SUB) => 
                 Ok(InstructionNode::SUB(RegisterNode::populate(parser)?, RegOrImmNode::populate(parser)?)),
-            TokenType::Instruction(Instruction::TEL) => 
-                Ok(InstructionNode::TEL(RegOrImmNode::populate(parser)?)),
             TokenType::Instruction(Instruction::OUT) => 
                 Ok(InstructionNode::OUT(RegOrImmNode::populate(parser)?)),
             TokenType::Instruction(Instruction::HLT) => 
@@ -147,7 +144,7 @@ impl Node for InstructionNode {
             Self::MW(_, _) | Self::ADD(_, _) | Self::SUB(_, _) => {
                 2
             },
-            Self::PUSH(reg_imm) | Self::TEL(reg_imm) | Self::OUT(reg_imm) => {
+            Self::PUSH(reg_imm) | Self::OUT(reg_imm) => {
                 match reg_imm {
                     RegOrImmNode::Register(_) => 1,
                     RegOrImmNode::Immediate(_) => 2
@@ -207,7 +204,6 @@ impl Node for InstructionNode {
             }
 
             InstructionNode::PUSH(reg_imm) |
-                InstructionNode::TEL(reg_imm) |
                 InstructionNode::OUT(reg_imm) => {
                 let instruction = node_to_instr(&self);
 
@@ -280,7 +276,6 @@ fn node_to_instr(node: &InstructionNode) -> Instruction {
         InstructionNode::JZ(_, _) => Instruction::JZ,
         InstructionNode::JO(_) => Instruction::JO,
         InstructionNode::SUB(_, _) => Instruction::SUB,
-        InstructionNode::TEL(_) => Instruction::TEL,
         InstructionNode::OUT(_) => Instruction::OUT,
         InstructionNode::HLT => Instruction::HLT,
         InstructionNode::Macro(_) => panic!("Cannot convert a macro instruction node to an opcode"),

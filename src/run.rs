@@ -223,7 +223,6 @@ pub fn run(rom: Vec<u8>, debug: bool) {
                 let result = add(left, !right, 1, &mut state);
                 state.registers.insert(reg_a, result);
             },
-            Instruction::TEL => todo!(),
             Instruction::OUT => {
                 let value: u8;
                 if immediate {

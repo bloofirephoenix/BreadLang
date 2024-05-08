@@ -1,0 +1,72 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "BreadLang",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#instructions"
+		},
+		{
+			"include": "#registers"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#subroutines"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.breadlang",
+				"match": "(\\s|^)(@macro|@include|const)\\s"
+			}]
+		},
+		"instructions": {
+			"patterns": [{
+				"name": "constant.language.breadlang",
+				"match": "\\b(LW|SW|MW|PUSH|POP|LDA|JMP|JZ|JO|ADD|SUB|TEL|OUT|HLT|NOP|DEF)\\b"
+			}]
+		},
+		"comments": {
+			"patterns": [{
+				"begin": ";",
+				"beginCaptures": {
+					"0": {
+						"name": "comment.breadlang"
+					}
+				},
+				"end": "\\n",
+				"name": "comment.breadlang"
+			}]
+		},
+		"registers": {
+			"patterns": [{
+				"name": "keyword.control.breadlang",
+				"match": "\\b(A|B|H|L)\\b"
+			}]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"begin": "([0-9]|0x|0b)",
+					"end": "(\\b)",
+					"name": "constant.numeric.breadlang"
+				}
+			]
+		},
+		"subroutines": {
+			"patterns": [{
+				"name": "entity.name.function",
+				"match": "([A-z]|[0-9])+?(?=:)"
+			}]
+		}
+	},
+	"scopeName": "source.breadlang"
+}

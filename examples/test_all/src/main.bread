@@ -1,0 +1,103 @@
+; This program is designed to test the functionality of the computer.
+; This program does not test every possible scenario for each instruction, but tests the broad strokes (i.e immediate value vs register value, jumping vs not jumping)
+;
+; This program should output 1,2,3,1,0,1,2,1,2,250,249,248,247,246
+main:
+	MW A 1
+	OUT A 		; Output 1
+
+	MW B A		; B = 1
+	ADD B A		; B = 1 + 1 = 2
+	OUT B		; Output 2
+	
+	ADD A 2 	; A = 1 + 2 = 3
+	OUT A		; Output 3
+	
+	SUB A B		; 3 - 2 = 1
+	OUT A		; Outputs 1
+
+	SUB A 1
+	OUT A		; Outputs 0
+
+	MW A 1
+
+	SW A 300	; Store 1 in 300
+	LDA 0b00000001_00000010 ; H = 1, L = 2, total = 258
+	SW B		; Store 2 in 258
+
+	PUSH 2
+	PUSH H ; Push 1
+
+	LW B 300 	; B = 300
+	OUT B		; Output 1
+
+	LW A 		; A = 2
+	OUT A		; Output 2
+
+	POP L		; L = 1
+	OUT L		; Output 1
+
+	POP H
+	OUT H		; Outputs 2
+
+	JMP _jmpi
+
+	; unreachable
+	DEF _unreachable
+	OUT 255
+	HLT
+
+	DEF _jmpi
+	OUT 250
+	
+	LDA _jmphl
+	JMP
+
+	; unreachable
+	OUT 255
+	HLT
+
+	DEF _jmphl
+	
+	JZ B _unreachable
+	MW B 0
+	JZ B _jzi
+
+	; unreachable
+	OUT 255
+	HLT
+
+	DEF _jzi
+	OUT 249
+
+	LDA _jzhl
+	JZ B
+
+	DEF _jzhl
+	OUT 248
+
+	MW A 1
+	MW B 1
+	ADD A B
+	JO _unreachable
+	
+	MW A 255
+	ADD A 1
+	JO _joi
+	
+	OUT 255
+	HLT
+
+	DEF _joi
+	OUT 247
+
+	LDA _johl
+	JO
+
+	OUT 255
+	HLT
+
+	DEF _johl
+	OUT 246
+
+	HLT

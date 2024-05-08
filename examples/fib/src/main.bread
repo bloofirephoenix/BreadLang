@@ -1,0 +1,22 @@
+; Adavanced Fib
+main:
+	; Push initial vales
+	PUSH 0
+	PUSH 1
+
+	DEF _loop 	; The basic loop of the program
+	POP A		; Pop the second newest value
+	POP B		; Pop the newest value
+	ADD A B		; A = A + B
+	
+	JO _stop 	; We have gone through all the numbers we can
+
+	OUT A		; Output the value
+
+	PUSH A		; Push the newest value
+	PUSH B		; Push the second newest value
+
+	JMP _loop	; Repeat
+
+	DEF _stop	; Ok we're done
+	HLT

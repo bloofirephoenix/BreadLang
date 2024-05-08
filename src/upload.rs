@@ -81,9 +81,9 @@ pub fn upload(program: Vec<u8>) {
 
         if i % (max_buffer_size * 10) == 0 {
             let time = SystemTime::now().duration_since(start).unwrap().as_millis();
-            let mut time = (time / buffer_size as u128) * (program.len() - i) as u128;
+            let time = (time / buffer_size as u128) * (program.len() - i) as u128;
             let time = format_time(time);
-            println!("{}", format!("{}% ({} remaining)", ((i + 1) as f32 / program.len() as f32) * 100 as f32, time).black());
+            println!("{}", format!("Uploading... {}% ({} remaining)", ((i + 1) as f32 / program.len() as f32) * 100 as f32, time).black());
         }
     }
 
@@ -92,6 +92,8 @@ pub fn upload(program: Vec<u8>) {
     println!("{}", "Verifying program".black());
     write_command(&mut port, ArduinoCommand::Verify);
     let mut current_address = 0;
+    
+    let mut start = SystemTime::now();
     'main_loop: loop {
         let available_bytes = port.bytes_to_read().expect("Failed to read buff size");
         if available_bytes > 0 {
@@ -111,7 +113,11 @@ pub fn upload(program: Vec<u8>) {
                 }
 
                 if current_address % 1000 == 0 {
-                    println!("{}", format!("{}% done", (current_address as f32 / program.len() as f32) * 100.0).black());
+                    let time = SystemTime::now().duration_since(start).unwrap().as_millis() as f64;
+                    let time = (program.len() as f64 - current_address as f64) * (time / 1000.0);
+                    let time = format_time(time.ceil() as u128);
+                    println!("{}", format!("Verifying... {}% ({} remaining)", (current_address as f32 / program.len() as f32) * 100.0, time).black());
+                    start = SystemTime::now();
                 }
             }
         } else {
@@ -166,5 +172,9 @@ fn format_time(mut time: u128) -> String {
         time = time % 1000;
         str += &format!("{}s", seconds);
     }
-    str.trim().to_string()
+    if !str.is_empty() {
+        str.trim().to_string()
+    } else {
+        String::from("0s")
+    }
 }

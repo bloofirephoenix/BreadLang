@@ -1,0 +1,25 @@
+{
+  "name": "breadlang",
+  "displayName": "BreadLang",
+  "description": "",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "breadlang",
+      "aliases": ["BreadLang", "breadlang"],
+      "extensions": [".bread"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "breadlang",
+      "scopeName": "source.breadlang",
+      "path": "./syntaxes/breadlang.tmLanguage.json"
+    }]
+  }
+}
