@@ -9,7 +9,7 @@ main:
 	POP B		; Pop the newest value
 	ADD A B		; A = A + B
 	
-	JO _stop 	; We have gone through all the numbers we can
+	JC _stop 	; We have gone through all the numbers we can
 
 	OUT A		; Output the value
 

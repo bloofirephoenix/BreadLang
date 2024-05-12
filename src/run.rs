@@ -1,4 +1,4 @@
-use std::{collections::HashMap, thread::sleep, time::Duration};
+use std::{collections::HashMap, io::{stdin, BufRead, Read}, thread::sleep, time::Duration};
 
 use enum_primitive::FromPrimitive;
 
@@ -164,7 +164,7 @@ pub fn run(rom: Vec<u8>, debug: bool) {
                     println!("JZ({}, j={})", address, jumping);
                 }
             },
-            Instruction::JO => {
+            Instruction::JC => {
                 let address = get_word16(&mut state, immediate);
 
                 let jumping: bool;
@@ -249,13 +249,13 @@ pub fn run(rom: Vec<u8>, debug: bool) {
             },
             Instruction::NOP => {
                 if debug {
-                    println!("DEBUG");
+                    println!("NOP");
                 }
             },
         }
 
         if debug {
-            sleep(Duration::from_millis(20));
+            let _ = stdin().lock().read_line(&mut String::new()); // wait until enter is pressed
         }
     }
 }

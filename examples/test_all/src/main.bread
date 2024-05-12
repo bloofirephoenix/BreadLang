@@ -79,25 +79,25 @@ main:
 	MW A 1
 	MW B 1
 	ADD A B
-	JO _unreachable
+	JC _unreachable
 	
 	MW A 255
 	ADD A 1
-	JO _joi
+	JC _jci
 	
 	OUT 255
 	HLT
 
-	DEF _joi
+	DEF _jci
 	OUT 247
 
-	LDA _johl
-	JO
+	LDA _jchl
+	JC
 
 	OUT 255
 	HLT
 
-	DEF _johl
+	DEF _jchl
 	OUT 246
 
 	HLT

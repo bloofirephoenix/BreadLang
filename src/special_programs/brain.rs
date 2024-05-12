@@ -258,7 +258,7 @@ pub fn get_signal(address: u32) -> u32 {
                         }
                     }
                 },
-                Instruction::JO => {
+                Instruction::JC => {
                     let overflow = overflow == 1;
 
                     if overflow {

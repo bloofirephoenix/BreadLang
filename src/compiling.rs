@@ -80,7 +80,7 @@ enum_from_primitive! {
         LDA  = 0b00110,
         JMP  = 0b00111,
         JZ   = 0b01000,
-        JO   = 0b01001,
+        JC   = 0b01001,
         ADD  = 0b01010,
         SUB  = 0b01011,
         //   = 0b01100,

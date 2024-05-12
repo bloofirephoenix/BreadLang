@@ -31,7 +31,7 @@
 		"instructions": {
 			"patterns": [{
 				"name": "constant.language.breadlang",
-				"match": "\\b(LW|SW|MW|PUSH|POP|LDA|JMP|JZ|JO|ADD|SUB|OUT|HLT|NOP|DEF)\\b"
+				"match": "\\b(LW|SW|MW|PUSH|POP|LDA|JMP|JZ|JO|JC|ADD|SUB|OUT|HLT|NOP|DEF)\\b"
 			}]
 		},
 		"comments": {

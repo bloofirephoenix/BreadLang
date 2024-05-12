@@ -13,7 +13,7 @@ pub enum InstructionNode {
     LDA(PlaceholderOrImm16Node),
     JMP(Option<PlaceholderNode>),
     JZ(RegisterNode, Option<PlaceholderNode>),
-    JO(Option<PlaceholderNode>),
+    JC(Option<PlaceholderNode>),
     ADD(RegisterNode, RegOrImmNode),
     SUB(RegisterNode, RegOrImmNode),
     OUT(RegOrImmNode),
@@ -78,11 +78,11 @@ impl Node for InstructionNode {
                     Ok(InstructionNode::JZ(register, None))
                 }
             },
-            TokenType::Instruction(Instruction::JO) => {
+            TokenType::Instruction(Instruction::JC) => {
                 if matches!(parser.peek().token_type, TokenType::Identifier(_)) {
-                    Ok(InstructionNode::JO(Some(PlaceholderNode::populate(parser)?)))
+                    Ok(InstructionNode::JC(Some(PlaceholderNode::populate(parser)?)))
                 } else {
-                    Ok(InstructionNode::JO(None))
+                    Ok(InstructionNode::JC(None))
                 }
             },
             TokenType::Instruction(Instruction::ADD) => 
@@ -152,7 +152,7 @@ impl Node for InstructionNode {
             }
             Self::POP(_) => 1,
             Self::LDA(_) => 3,
-            Self::JMP(pos) | Self::JZ(_, pos) | Self::JO(pos) => {
+            Self::JMP(pos) | Self::JZ(_, pos) | Self::JC(pos) => {
                 match pos {
                     Some(_) => 3,
                     None => 1
@@ -227,7 +227,7 @@ impl Node for InstructionNode {
             }
 
             InstructionNode::JMP(imm) |
-                InstructionNode::JO(imm) => {
+                InstructionNode::JC(imm) => {
                 let instruction = node_to_instr(&self);
                 match imm {
                     None => compiler.first_byte(instruction, false, None),
@@ -274,7 +274,7 @@ fn node_to_instr(node: &InstructionNode) -> Instruction {
         InstructionNode::LDA(_) => Instruction::LDA,
         InstructionNode::JMP(_) => Instruction::JMP,
         InstructionNode::JZ(_, _) => Instruction::JZ,
-        InstructionNode::JO(_) => Instruction::JO,
+        InstructionNode::JC(_) => Instruction::JC,
         InstructionNode::SUB(_, _) => Instruction::SUB,
         InstructionNode::OUT(_) => Instruction::OUT,
         InstructionNode::HLT => Instruction::HLT,

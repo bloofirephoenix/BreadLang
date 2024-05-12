@@ -1,4 +1,4 @@
-use crate::{compiling::{error_handler::{CompilerError, ErrorCode}, lexer::TokenType}, new};
+use crate::compiling::{error_handler::{CompilerError, ErrorCode}, lexer::TokenType};
 
 use super::{Node, Parser};
 

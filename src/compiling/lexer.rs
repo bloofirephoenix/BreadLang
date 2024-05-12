@@ -1,4 +1,4 @@
-use super::{error_handler::{CompilerError, ErrorCode}, Instruction, Register};
+use super::{error_handler::{self, CompilerError, ErrorCode}, Instruction, Register};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum TokenType {
@@ -212,7 +212,13 @@ fn identifier(tokenizer: &mut Tokenizer) {
         "LDA" => tokenizer.add_token(TokenType::Instruction(Instruction::LDA)),
         "JMP" => tokenizer.add_token(TokenType::Instruction(Instruction::JMP)),
         "JZ" => tokenizer.add_token(TokenType::Instruction(Instruction::JZ)),
-        "JO" => tokenizer.add_token(TokenType::Instruction(Instruction::JO)),
+        
+        "JO" => {
+            error_handler::print_warning(&format!("Use of the JO instruction is deprecated at {}:{}. Use JC instead.", tokenizer.filename, tokenizer.line));
+            tokenizer.add_token(TokenType::Instruction(Instruction::JC))
+        },
+        "JC" => tokenizer.add_token(TokenType::Instruction(Instruction::JC)),
+
         "ADD" => tokenizer.add_token(TokenType::Instruction(Instruction::ADD)),
         "SUB" => tokenizer.add_token(TokenType::Instruction(Instruction::SUB)),
         "OUT" => tokenizer.add_token(TokenType::Instruction(Instruction::OUT)),
