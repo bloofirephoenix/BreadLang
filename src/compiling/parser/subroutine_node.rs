@@ -90,7 +90,7 @@ impl SubroutineNode {
         for instruction in &mut self.instructions {
             if let InstructionNode::Macro(holder) = instruction {
                 if let MacroHolder::Macro(node) = holder {
-                    node.calculate_placeholders(position, placeholders)
+                    node.calculate_placeholders(position, &self.placeholders)
                 } else {
                     panic!("All macros should be populated by now");
                 }

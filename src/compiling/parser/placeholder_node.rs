@@ -29,7 +29,7 @@ impl PlaceholderNode {
                 value.compile(compiler);
             }
         } else {
-            panic!("Placeholder does not exist")
+            panic!("Placeholder {} does not exist", self.name);
         }
     }
 }
